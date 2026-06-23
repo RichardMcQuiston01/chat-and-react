@@ -1,0 +1,9 @@
+.idea/
+.vscode/
+.superpowers/
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+
+*.log
