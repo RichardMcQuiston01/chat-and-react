@@ -1,0 +1,16 @@
+{
+  "name": "chat-and-react-workspace",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "build": "bun run --filter '*' build",
+    "test": "bun run --filter '*' test",
+    "typecheck": "bun run --filter '*' typecheck",
+    "lint": "bun run --filter '*' lint"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "tsup": "^8.3.0",
+    "vitest": "^1.6.0"
+  }
+}
