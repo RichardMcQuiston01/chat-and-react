@@ -9,7 +9,6 @@
     "lint": "bun run --filter '*' lint"
   },
   "devDependencies": {
-    "jsdom": "^29.1.1",
     "tsup": "^8.3.0",
     "typescript": "^5.4.0",
     "vitest": "^1.6.0"

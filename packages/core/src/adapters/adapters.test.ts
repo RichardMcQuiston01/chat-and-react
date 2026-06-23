@@ -23,15 +23,15 @@ describe('BrowserEventAdapter', () => {
 
   beforeEach(() => {
     dispatched = [];
-    vi.spyOn(document, 'dispatchEvent').mockImplementation((e) => {
-      dispatched.push(e as CustomEvent);
-      return true;
-    });
+    const mockDoc = {
+      dispatchEvent: vi.fn((e: Event) => { dispatched.push(e as CustomEvent); return true; }),
+    };
+    vi.stubGlobal('document', mockDoc);
     adapter = new BrowserEventAdapter();
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it('dispatches a chat-page-submit CustomEvent for page:submit', () => {
