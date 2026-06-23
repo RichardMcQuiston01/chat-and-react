@@ -7,3 +7,11 @@ dist/
 **/dist/
 
 *.log
+
+*.zip
+*.7z
+*.rar
+*.ace
+*.iso
+*.dmg
+*.tar.gz
