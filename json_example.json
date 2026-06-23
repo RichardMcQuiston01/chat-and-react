@@ -1,0 +1,112 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "x-chat-version": "1",
+  "x-chat-options": {
+    "userResumable": true,
+    "localStorage": true,
+    "autoComplete": false
+  },
+  "x-chat-pages": [
+    {
+      "id": "contact",
+      "title": "Let's get started",
+      "questions": [
+        {
+          "id": "full_name",
+          "type": "string",
+          "x-chat-input": "text",
+          "title": "What's your full name?",
+          "x-chat-placeholder": "Type your name..."
+        },
+        {
+          "id": "preferred_contact",
+          "type": "string",
+          "x-chat-input": "radio",
+          "title": "How should we reach you?",
+          "enum": ["Email", "Phone", "SMS"],
+          "x-chat-condition": { "ref": "has_name" }
+        }
+      ],
+      "branching": [
+        {
+          "type": "always",
+          "destination_id": "is_student"
+        }
+      ]
+    },
+    {
+      "id": "is-student",
+      "title": "Student Status",
+      "questions": [
+        {
+          "id": "student_status",
+          "type": "string",
+          "x-chat-input": "radio",
+          "title": "Are you a student?",
+          "enum": ["Yes", "No"],
+          "x-chat-condition": { "ref": "has_name" }
+        }
+      ],
+      "branching": [
+        {
+          "type": "if",
+          "form_element": "student_status",
+          "value": "Yes",
+          "destination_id": "student_info"
+        },
+        {
+          "type": "if",
+          "form_element": "student_status",
+          "value": "No",
+          "destination_id": "final-page"
+        }
+      ]
+    },
+    {
+      "id": "contact",
+      "title": "School Info",
+      "questions": [
+        {
+          "id": "school_name",
+          "type": "string",
+          "x-chat-input": "text",
+          "title": "What's your school's name?",
+          "x-chat-placeholder": "Type your school name..."
+        }
+      ],
+      "branching": [
+        {
+          "type": "always",
+          "destination_id": "final-page"
+        }
+      ]
+    },
+    {
+      "id": "final-page",
+      "title": "Almost Done",
+      "questions": [
+        {
+          "id": "favorite_color",
+          "type": "string",
+          "x-chat-input": "text",
+          "title": "What's your favorite color?",
+          "x-chat-placeholder": "Type your favorite color..."
+        }
+      ],
+      "branching": [
+        {
+          "type": "always",
+          "destination_id": "**FORM_COMPLETED**"
+        }
+      ]
+    }
+  ],
+  "x-chat-rules": {
+    "has_name": { "!!": [
+        { "var": "full_name" },
+        { "var": "school_name" },
+        { "var": "favorite_color" }
+      ] 
+    }
+  }
+}
