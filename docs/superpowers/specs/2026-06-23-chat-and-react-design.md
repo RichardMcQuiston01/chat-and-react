@@ -57,6 +57,8 @@ Consumers who want headless control import `@chat-and-react/core` directly. The 
 
 The schema is a JSON Schema `object` extended with `x-chat-*` keywords to remain spec-compliant while adding chat-specific behavior. Draft-07 is the base.
 
+Pages form a **directed graph**, not a linear sequence. The first entry in `x-chat-pages` is always the entry point. Each page declares its own navigation via a `branching` array evaluated top-to-bottom; the first matching rule wins. The special sentinel `"**FORM_COMPLETED**"` as a `destination_id` ends the form.
+
 ```json
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -77,15 +79,58 @@ The schema is a JSON Schema `object` extended with `x-chat-*` keywords to remain
           "x-chat-input": "text",
           "title": "What's your full name?",
           "x-chat-placeholder": "Type your name..."
-        },
+        }
+      ],
+      "branching": [
+        { "type": "always", "destination_id": "is-student" }
+      ]
+    },
+    {
+      "id": "is-student",
+      "title": "Student Status",
+      "questions": [
         {
-          "id": "preferred_contact",
+          "id": "student_status",
           "type": "string",
           "x-chat-input": "radio",
-          "title": "How should we reach you?",
-          "enum": ["Email", "Phone", "SMS"],
-          "x-chat-condition": { "ref": "has_name" }
+          "title": "Are you a student?",
+          "enum": ["Yes", "No"]
         }
+      ],
+      "branching": [
+        { "type": "if", "form_element": "student_status", "value": "Yes", "destination_id": "student-info" },
+        { "type": "if", "form_element": "student_status", "value": "No",  "destination_id": "final-page" }
+      ]
+    },
+    {
+      "id": "student-info",
+      "title": "School Info",
+      "questions": [
+        {
+          "id": "school_name",
+          "type": "string",
+          "x-chat-input": "text",
+          "title": "What's your school's name?",
+          "x-chat-placeholder": "Type your school name..."
+        }
+      ],
+      "branching": [
+        { "type": "always", "destination_id": "final-page" }
+      ]
+    },
+    {
+      "id": "final-page",
+      "title": "Almost Done",
+      "questions": [
+        {
+          "id": "favorite_color",
+          "type": "string",
+          "x-chat-input": "text",
+          "title": "What's your favorite color?"
+        }
+      ],
+      "branching": [
+        { "type": "always", "destination_id": "**FORM_COMPLETED**" }
       ]
     }
   ],
@@ -101,11 +146,23 @@ The schema is a JSON Schema `object` extended with `x-chat-*` keywords to remain
 |---|---|---|---|
 | `x-chat-version` | root | `string` | Schema format version; must be `"1"` |
 | `x-chat-options` | root | `object` | Global runtime options (see §5) |
-| `x-chat-pages` | root | `array` | Ordered list of pages |
+| `x-chat-pages` | root | `array` | Page graph definition; first entry is the entry point |
 | `x-chat-input` | question | `string` | Widget type: `text`, `textarea`, `dropdown`, `checkbox`, `radio` |
 | `x-chat-placeholder` | question | `string` | Placeholder text for the input widget |
 | `x-chat-condition` | question | `object` | JsonLogic rule or `{ ref: "ruleName" }` pointer; question is shown only when the condition evaluates to truthy |
 | `x-chat-rules` | root | `object` | Named rule dictionary; values are JsonLogic expressions |
+| `branching` | page | `array` | Ordered list of branching rules evaluated top-to-bottom; first match determines the next page |
+
+### Branching Rules
+
+Each entry in a page's `branching` array is one of two types:
+
+| Type | Fields | Behaviour |
+|---|---|---|
+| `"always"` | `destination_id` | Unconditional — always navigates to `destination_id` |
+| `"if"` | `form_element`, `value`, `destination_id` | Navigates to `destination_id` when the answer to `form_element` strictly equals `value` |
+
+`destination_id` must match a page `id` within `x-chat-pages`, or be the reserved sentinel `"**FORM_COMPLETED**"` which ends the form and fires the `form:complete` event. Every page must have at least one `"always"` rule as its final entry to guarantee a branch is always taken.
 
 ### Input Widget Mapping
 
@@ -142,16 +199,22 @@ controller.destroy();                 // cleans up listeners and session state
 
 **Responsibilities:**
 1. Passes raw schema through `InputAdapter.transform()` then `SchemaParser.parse()`
-2. On `start()`, checks `SessionManager` for saved progress and resumes from the saved page if found
-3. Before advancing each page, calls `RuleEngine.evaluate()` to determine which questions on the next page are visible
-4. Calls `OutputAdapter.emit()` on `page:submit` and `form:complete`
-5. Routes all caught errors through `ErrorLogAdapter.log()`
+2. On `start()`, checks `SessionManager` for saved progress and resumes from the saved page ID if found; otherwise starts at the first page
+3. Before rendering each page, calls `RuleEngine.evaluate()` to determine which questions on that page are visible
+4. On page submit, evaluates the page's `branching` array top-to-bottom and navigates to the first matching `destination_id`
+5. When `destination_id` is `"**FORM_COMPLETED**"`, fires `form:complete` and clears session state
+6. Calls `OutputAdapter.emit()` on `page:submit` and `form:complete`
+7. Routes all caught errors through `ErrorLogAdapter.log()`
 
 ### 4.2 `SchemaParser`
 
 Validates and normalizes raw input into a typed `ChatSchema` object. Throws `ChatError` with code `SCHEMA_INVALID` if validation fails. Validation checks:
 - Required `x-chat-version` field present and equals `"1"`
+- All page `id` values are unique within `x-chat-pages`
 - All question `id` values are unique across the entire schema
+- All `branching[].destination_id` values reference a valid page `id` or `"**FORM_COMPLETED**"`
+- Every page has at least one `branching` entry, and its last entry is type `"always"`
+- All `branching[].form_element` values reference a question `id` that exists in the schema
 - All `x-chat-condition` refs resolve to entries in `x-chat-rules`
 - All `x-chat-input` values are one of the five supported widget types
 
@@ -174,7 +237,7 @@ Manages two localStorage namespaces:
 | Key | Written when | Cleared when |
 |---|---|---|
 | `car:session-id` | First `start()` call ever | Never (persists across forms) |
-| `car:progress:<session-id>` | After each page submit (`userResumable: true`) | `form:complete` fires |
+| `car:progress:<session-id>` | After each page submit (`userResumable: true`); stores current page `id` and all collected answers | `form:complete` fires |
 | `car:input:<session-id>:<question-id>` | On each input event (`localStorage: true`) | `form:complete` fires |
 
 If localStorage is unavailable (private browsing, quota exceeded), `SessionManager` logs `STORAGE_UNAVAILABLE` and operates in memory-only mode. The session ID is still generated but held in memory for the lifetime of the controller instance.
@@ -210,8 +273,8 @@ interface PageSubmitEvent {
   type: 'page:submit';
   sessionId: string;
   pageId: string;
-  pageIndex: number;
-  answers: AnswerMap;
+  visitIndex: number;   // 0-based count of pages visited so far, not schema array position
+  answers: AnswerMap;   // answers collected on this page only
 }
 
 interface FormCompleteEvent {
@@ -375,6 +438,7 @@ Test files live alongside source (`*.test.ts` in the same directory as the modul
 ## 8. Deferred to Future Versions
 
 - **Schema URL fetching** — the `schema` attribute accepts a JSON string only in v1; fetching from a URL is deferred
+- **Complex branching conditions** — v1 branching supports `"always"` and equality-based `"if"` only; JsonLogic-powered branching conditions (AND/OR/NOT across multiple answers) are deferred to a future version
 - **Advanced rule engine schema** — the `x-chat-rules` / `x-chat-condition` format is established but the full JsonLogic operator surface and authoring tooling is deferred
 - **`OutputAdapter` variants** — Webhook, WebSocket, and EventEmitter adapters are mentioned in the README but not part of v1; `BrowserEventAdapter` ships; others are documented as examples
 - **`InputAdapter` examples** — CMS-specific adapters (e.g., Contentful, Sanity) are out of scope for v1
