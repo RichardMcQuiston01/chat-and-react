@@ -1,5 +1,1 @@
-/**
- * Core package exports
- */
-
-export {};
+export * from './types.js';
