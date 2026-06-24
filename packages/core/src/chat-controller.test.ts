@@ -1,8 +1,8 @@
 // packages/core/src/chat-controller.test.ts
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { ChatController } from './chat-controller.js';
 import { SessionManager } from './session-manager.js';
-import type { ChatControllerConfig, ChatEvent, OutputAdapter, ErrorLogAdapter } from './types.js';
+import type { ChatControllerConfig, ChatEvent } from './types.js';
 
 function makeStorage() {
   const store: Record<string, string> = {};
@@ -144,6 +144,20 @@ describe('ChatController', () => {
     c.on('page:submit', submitFn);
     c.submitPage({ q1: 'val' });
     expect(submitFn).not.toHaveBeenCalled();
+  });
+
+  it('resumes from saved progress when userResumable is true', () => {
+    const storage = makeStorage();
+    const session = new SessionManager(storage);
+    // Pre-seed saved progress for page-a
+    const c1 = new ChatController({ schema: branchingSchema }, session);
+    c1.start();
+    c1.submitPage({ choice: 'A' }); // navigates to page-a, saves progress
+    // Now construct a new controller with the same storage — should resume at page-a
+    const session2 = new SessionManager(storage);
+    const c2 = new ChatController({ schema: branchingSchema }, session2);
+    c2.start();
+    expect(c2.getCurrentPage()?.id).toBe('page-a');
   });
 
   it('filters hidden questions via x-chat-condition', () => {
