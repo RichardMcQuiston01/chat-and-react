@@ -6,6 +6,26 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.3.0] — 2026-06-24
+
+### Added
+
+**`chat-and-react-schema-builder`** — Vite + React 18 SPA for visually creating, editing, importing, and exporting `chat-and-react` JSON schemas without hand-writing JSON
+
+- **Page management** — add, remove, and reorder pages from a sidebar; each page has an editable ID and title
+- **Question editor** — per-question fields adapt to the selected input type (`text`, `textarea`, `dropdown`, `radio`, `checkbox`); options list for select-style types; placeholder text for text types
+- **Conditional visibility** — attach a named-rule condition ref to any question
+- **Branching editor** — add `if` / `always` rules per page with question and destination dropdowns; the terminal `always` rule is protected from deletion and type changes
+- **Named rules panel** — edit `x-chat-rules` as raw JSON with live parse-error feedback; rule names populate the condition ref dropdowns automatically
+- **Schema options** — `userResumable`, `localStorage`, `autoComplete` checkbox toggles
+- **Import** — load any existing schema JSON file; restored to the editor immediately
+- **Export** — runs `parseSchema` validation before downloading; schema is only written if valid
+- **Validate** — runs `parseSchema` and shows a success or error banner without downloading
+- **Live JSON preview** — collapsible bottom drawer showing the current schema as formatted JSON, updated on every keystroke
+- Helper functions `emptySchema`, `emptyPage`, `emptyQuestion` covered by 8 unit tests
+
+---
+
 ## [0.2.0] — 2026-06-24
 
 ### Added

@@ -101,6 +101,48 @@ bun run preview # serve the built output locally
 
 ---
 
+## Schema Builder
+
+The repository includes a visual schema editor in `packages/schema-builder` — a Vite + React 18 SPA that lets you create, edit, import, and export `chat-and-react` JSON schemas without hand-writing JSON.
+
+### Running the Schema Builder
+
+```bash
+# From the repo root — install all workspace deps first
+bun install
+
+# Then start the dev server
+cd packages/schema-builder
+bun run dev
+```
+
+Open `http://localhost:5173` in your browser (port may increment if already in use).
+
+### What you can do
+
+| Feature | Description |
+|---------|-------------|
+| **Page management** | Add, remove, and select pages from the left sidebar |
+| **Question editor** | Edit ID, title, input type, options, and placeholder per question; move questions up/down |
+| **Conditional visibility** | Attach a named-rule condition ref to any question so it only appears when the rule passes |
+| **Branching rules** | Add `if` / `always` rules per page — pick the triggering question, expected value, and destination page; the terminal `always` rule is protected |
+| **Named rules** | Edit `x-chat-rules` as raw JSON; rule names auto-populate condition ref dropdowns |
+| **Schema options** | Toggle `userResumable`, `localStorage`, and `autoComplete` |
+| **Import** | Load an existing `schema.json` file to continue editing it |
+| **Validate** | Run `parseSchema` against the current schema and see a success or error banner |
+| **Export** | Download `schema.json` — validation runs first; the file is only written if the schema is valid |
+| **JSON preview** | Collapsible bottom drawer showing the live formatted JSON output |
+
+### Building the Schema Builder for static hosting
+
+```bash
+cd packages/schema-builder
+bun run build   # output written to packages/schema-builder/dist/
+bun run preview # serve the built output locally
+```
+
+---
+
 ## Schema Format
 
 Schemas follow JSON Schema Draft-07 extended with `x-chat-*` keywords.
