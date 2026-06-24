@@ -6,6 +6,29 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.2.0] — 2026-06-24
+
+### Added
+
+**`@chat-and-react/adapters`** — new optional package with seven ready-made adapters
+
+*Output adapters*
+- `EventEmitterOutputAdapter` — forwards events to a Node.js `EventEmitter` (or any compatible emitter)
+- `WebhookOutputAdapter` — fire-and-forget HTTP POST to a webhook URL; supports custom headers
+- `WebSocketOutputAdapter` — sends events over an existing WebSocket connection; guards on open state
+
+*Error-log adapters*
+- `WebhookErrorAdapter` — fire-and-forget HTTP POST for `ChatError` objects; supports custom headers
+- `MongoDbErrorAdapter` — fire-and-forget `insertOne` into a MongoDB collection
+
+*Input adapters*
+- `MySqlInputAdapter` — static async `create()` factory; fetches schema rows via a `mysql2`-compatible connection and caches the result
+- `MongoDbInputAdapter` — static async `create()` factory; fetches one document via a MongoDB collection and caches it
+
+**`chat-and-react-demo`** — Vite SPA demo showcasing the `<chat-form>` web component with all five input types, conditional questions, multi-path branching, and a live event log
+
+---
+
 ## [0.1.0] — 2026-06-24
 
 Initial release.

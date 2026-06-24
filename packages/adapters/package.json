@@ -1,0 +1,38 @@
+{
+  "name": "@chat-and-react/adapters",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@chat-and-react/core": "workspace:*"
+  },
+  "peerDependencies": {
+    "mongodb": ">=5.0.0",
+    "mysql2": ">=3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "mongodb": { "optional": true },
+    "mysql2": { "optional": true }
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "mongodb": "^6.0.0",
+    "mysql2": "^3.0.0",
+    "tsup": "^8.5.1",
+    "vitest": "^1.6.0"
+  }
+}

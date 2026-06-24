@@ -18,6 +18,12 @@ The core logic is also available separately if you only need the headless contro
 npm install @chat-and-react/core
 ```
 
+Optional pre-built adapters (webhook, WebSocket, MongoDB, MySQL, EventEmitter):
+
+```bash
+npm install @chat-and-react/adapters
+```
+
 ## CDN / Script Tag
 
 ```html
@@ -38,16 +44,59 @@ The IIFE bundle registers the `<chat-form>` element and exposes `window.ChatAndR
 
   const el = document.getElementById('my-form');
 
-  el.addEventListener('car:page:submit', (e) => {
+  el.addEventListener('chat-page-submit', (e) => {
     console.log('Page submitted:', e.detail);
     // { sessionId, pageId, visitIndex, answers }
   });
 
-  el.addEventListener('car:form:complete', (e) => {
+  el.addEventListener('chat-form-complete', (e) => {
     console.log('Form complete:', e.detail);
     // { sessionId, allAnswers }
   });
 </script>
+```
+
+---
+
+## Demo
+
+The repository includes a Vite SPA demo in `packages/demo` that shows the web component in action.
+
+### Running the demo
+
+```bash
+# From the repo root — install all workspace deps first
+bun install
+
+# Then start the dev server
+cd packages/demo
+bun run dev
+```
+
+Open `http://localhost:5173` in your browser.
+
+### What the demo shows
+
+The demo runs a five-page form covering all supported input types and branching:
+
+| Page | Input types used |
+|------|-----------------|
+| Welcome | `text` (name), `textarea` (bio — conditional on name being filled) |
+| Preferences | `radio` (contact method), `checkbox` (interests), `dropdown` (country), `radio` (occupation) |
+| Education *(students only)* | `text` (school), `dropdown` (study level) |
+| Profession *(workers only)* | `text` (job title), `dropdown` (industry) |
+| Final | `textarea` (feedback) |
+
+The occupation answer on the Preferences page drives branching: students are routed to the Education page, workers to the Profession page, and everyone else jumps straight to Final.
+
+A **live event log** panel on the right side of the screen displays the JSON payload of every `chat-page-submit` and `chat-form-complete` event as they fire. A **Start over** button appears when the form completes, clearing the log and resetting the form.
+
+### Building the demo for static hosting
+
+```bash
+cd packages/demo
+bun run build   # output written to packages/demo/dist/
+bun run preview # serve the built output locally
 ```
 
 ---
@@ -145,7 +194,7 @@ Options can be set in the schema under `x-chat-options`, or as element attribute
 
 Both events bubble as browser `CustomEvent`s with a `detail` payload.
 
-### `car:page:submit`
+### `chat-page-submit`
 
 Fires after each page is submitted (suppressed when `userResumable` is `false`).
 
@@ -158,7 +207,7 @@ Fires after each page is submitted (suppressed when `userResumable` is `false`).
 }
 ```
 
-### `car:form:complete`
+### `chat-form-complete`
 
 Fires when no further pages remain.
 
@@ -249,27 +298,127 @@ const myAdapter: OutputAdapter = {
 Route runtime errors to a custom sink.
 
 ```ts
-import type { ErrorLogAdapter } from '@chat-and-react/core';
+import type { ErrorLogAdapter, ChatError } from '@chat-and-react/core';
 
 const myAdapter: ErrorLogAdapter = {
-  log(code, message, cause) {
-    myLogger.error({ code, message, cause });
+  log(error: ChatError) {
+    myLogger.error(error.code, error.message, error.cause);
   },
 };
 ```
 
-### Registering adapters
+Adapters are supplied to `ChatController` directly when using `@chat-and-react/core` headlessly (see [Headless Usage](#headless-usage-chat-and-reactcore) below).
 
-```ts
-import { AdapterRegistry } from 'chat-and-react';
+---
 
-const registry = new AdapterRegistry();
-registry.setInputAdapter(myAdapter);
-registry.setOutputAdapter(myOutputAdapter);
-registry.setErrorAdapter(myErrorAdapter);
+## Optional Adapters (`@chat-and-react/adapters`)
+
+Install the adapters package alongside core or the web component:
+
+```bash
+npm install @chat-and-react/adapters
 ```
 
-Pass the registry to the element before it connects to the DOM (or supply adapters via `ChatController` directly when using `@chat-and-react/core` headlessly).
+### Output adapters
+
+**`EventEmitterOutputAdapter`** — emit events on a Node.js `EventEmitter`:
+
+```ts
+import { EventEmitter } from 'node:events';
+import { EventEmitterOutputAdapter } from '@chat-and-react/adapters';
+
+const emitter = new EventEmitter();
+emitter.on('page:submit', (event) => { /* ... */ });
+emitter.on('form:complete', (event) => { /* ... */ });
+
+const adapter = new EventEmitterOutputAdapter(emitter);
+```
+
+**`WebhookOutputAdapter`** — POST each event to a webhook URL (fire-and-forget):
+
+```ts
+import { WebhookOutputAdapter } from '@chat-and-react/adapters';
+
+const adapter = new WebhookOutputAdapter('https://api.example.com/events', {
+  headers: { Authorization: 'Bearer my-token' },
+});
+```
+
+**`WebSocketOutputAdapter`** — send events over an open WebSocket:
+
+```ts
+import { WebSocketOutputAdapter } from '@chat-and-react/adapters';
+
+const socket = new WebSocket('wss://api.example.com/ws');
+const adapter = new WebSocketOutputAdapter(socket);
+// Silently no-ops if the socket is not open when emit() is called.
+```
+
+### Error-log adapters
+
+**`WebhookErrorAdapter`** — POST errors to a webhook URL:
+
+```ts
+import { WebhookErrorAdapter } from '@chat-and-react/adapters';
+
+const adapter = new WebhookErrorAdapter('https://api.example.com/errors', {
+  headers: { 'X-Api-Key': 'secret' },
+});
+```
+
+**`MongoDbErrorAdapter`** — insert errors into a MongoDB collection:
+
+```ts
+import { MongoClient } from 'mongodb';
+import { MongoDbErrorAdapter } from '@chat-and-react/adapters';
+
+const client = new MongoClient(process.env.MONGO_URI);
+await client.connect();
+const collection = client.db('mydb').collection('chat_errors');
+const adapter = new MongoDbErrorAdapter(collection);
+```
+
+### Input adapters
+
+Both database input adapters use a static async `create()` factory. The schema is fetched once at creation time; `transform()` returns the cached result.
+
+**`MySqlInputAdapter`** — load a schema from MySQL:
+
+```ts
+import mysql from 'mysql2/promise';
+import { MySqlInputAdapter } from '@chat-and-react/adapters';
+
+const connection = await mysql.createConnection({ host: 'localhost', /* ... */ });
+const adapter = await MySqlInputAdapter.create(
+  connection,
+  'SELECT schema_json FROM form_schemas WHERE slug = ?',
+  ['contact-form'],
+);
+```
+
+**`MongoDbInputAdapter`** — load a schema from a MongoDB document:
+
+```ts
+import { MongoClient } from 'mongodb';
+import { MongoDbInputAdapter } from '@chat-and-react/adapters';
+
+const collection = client.db('mydb').collection('schemas');
+const adapter = await MongoDbInputAdapter.create(collection, { slug: 'contact-form' });
+```
+
+Use any adapter with `ChatController`:
+
+```ts
+import { ChatController } from '@chat-and-react/core';
+
+const controller = new ChatController({
+  schema: null,        // ignored when using a DB input adapter
+  inputAdapter: adapter,
+  outputAdapter: webhookAdapter,
+  errorAdapter: mongoErrorAdapter,
+});
+controller.start();
+```
 
 ---
 
