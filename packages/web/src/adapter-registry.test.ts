@@ -1,31 +1,56 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { AdapterRegistry } from './adapter-registry.js';
-import type { OutputAdapter } from '@chat-and-react/core';
+import type { InputAdapter, OutputAdapter, ErrorLogAdapter } from '@chat-and-react/core';
+import {
+  IdentityInputAdapter,
+  BrowserEventAdapter,
+  ConsoleErrorAdapter,
+} from '@chat-and-react/core';
 
 describe('AdapterRegistry', () => {
-  beforeEach(() => AdapterRegistry.clear());
+  let registry: AdapterRegistry;
 
-  it('returns undefined for an unregistered key', () => {
-    expect(AdapterRegistry.get('missing')).toBeUndefined();
+  beforeEach(() => {
+    registry = new AdapterRegistry();
   });
 
-  it('returns a registered adapter by key', () => {
+  it('returns default IdentityInputAdapter when no input adapter set', () => {
+    expect(registry.getInputAdapter()).toBeInstanceOf(IdentityInputAdapter);
+  });
+
+  it('returns default BrowserEventAdapter when no output adapter set', () => {
+    expect(registry.getOutputAdapter()).toBeInstanceOf(BrowserEventAdapter);
+  });
+
+  it('returns default ConsoleErrorAdapter when no error adapter set', () => {
+    expect(registry.getErrorAdapter()).toBeInstanceOf(ConsoleErrorAdapter);
+  });
+
+  it('stores and retrieves a custom input adapter', () => {
+    const adapter: InputAdapter = { transform: async (raw) => raw as any };
+    registry.setInputAdapter(adapter);
+    expect(registry.getInputAdapter()).toBe(adapter);
+  });
+
+  it('stores and retrieves a custom output adapter', () => {
     const adapter: OutputAdapter = { emit: () => {} };
-    AdapterRegistry.register('my-output', adapter);
-    expect(AdapterRegistry.get('my-output')).toBe(adapter);
+    registry.setOutputAdapter(adapter);
+    expect(registry.getOutputAdapter()).toBe(adapter);
   });
 
-  it('overwrites an existing registration', () => {
-    const a1: OutputAdapter = { emit: () => {} };
-    const a2: OutputAdapter = { emit: () => {} };
-    AdapterRegistry.register('key', a1);
-    AdapterRegistry.register('key', a2);
-    expect(AdapterRegistry.get('key')).toBe(a2);
+  it('stores and retrieves a custom error adapter', () => {
+    const adapter: ErrorLogAdapter = { log: () => {} };
+    registry.setErrorAdapter(adapter);
+    expect(registry.getErrorAdapter()).toBe(adapter);
   });
 
-  it('clear() removes all registrations', () => {
-    AdapterRegistry.register('k', { emit: () => {} });
-    AdapterRegistry.clear();
-    expect(AdapterRegistry.get('k')).toBeUndefined();
+  it('reset() restores all adapters to defaults', () => {
+    registry.setInputAdapter({ transform: async (raw) => raw as any });
+    registry.setOutputAdapter({ emit: () => {} });
+    registry.setErrorAdapter({ log: () => {} });
+    registry.reset();
+    expect(registry.getInputAdapter()).toBeInstanceOf(IdentityInputAdapter);
+    expect(registry.getOutputAdapter()).toBeInstanceOf(BrowserEventAdapter);
+    expect(registry.getErrorAdapter()).toBeInstanceOf(ConsoleErrorAdapter);
   });
 });

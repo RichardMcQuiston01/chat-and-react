@@ -1,29 +1,42 @@
 import type { InputAdapter, OutputAdapter, ErrorLogAdapter } from '@chat-and-react/core';
+import {
+  IdentityInputAdapter,
+  BrowserEventAdapter,
+  ConsoleErrorAdapter,
+} from '@chat-and-react/core';
 
-type AnyAdapter = InputAdapter | OutputAdapter | ErrorLogAdapter;
+export class AdapterRegistry {
+  private inputAdapter: InputAdapter = new IdentityInputAdapter();
+  private outputAdapter: OutputAdapter = new BrowserEventAdapter();
+  private errorAdapter: ErrorLogAdapter = new ConsoleErrorAdapter();
 
-const registry = new Map<string, AnyAdapter>();
+  setInputAdapter(adapter: InputAdapter): void {
+    this.inputAdapter = adapter;
+  }
 
-/** Registry for looking up named adapters by key. */
-export const AdapterRegistry = {
-  /**
-   * Register an adapter under a given key.
-   * Overwrites any existing registration for the same key.
-   */
-  register(key: string, adapter: AnyAdapter): void {
-    registry.set(key, adapter);
-  },
+  setOutputAdapter(adapter: OutputAdapter): void {
+    this.outputAdapter = adapter;
+  }
 
-  /**
-   * Retrieve a previously registered adapter by key.
-   * Returns `undefined` if no adapter is registered under that key.
-   */
-  get(key: string): AnyAdapter | undefined {
-    return registry.get(key);
-  },
+  setErrorAdapter(adapter: ErrorLogAdapter): void {
+    this.errorAdapter = adapter;
+  }
 
-  /** Remove all registered adapters. Useful between tests. */
-  clear(): void {
-    registry.clear();
-  },
-};
+  getInputAdapter(): InputAdapter {
+    return this.inputAdapter;
+  }
+
+  getOutputAdapter(): OutputAdapter {
+    return this.outputAdapter;
+  }
+
+  getErrorAdapter(): ErrorLogAdapter {
+    return this.errorAdapter;
+  }
+
+  reset(): void {
+    this.inputAdapter = new IdentityInputAdapter();
+    this.outputAdapter = new BrowserEventAdapter();
+    this.errorAdapter = new ConsoleErrorAdapter();
+  }
+}
