@@ -12,7 +12,7 @@ export default defineConfig([
     },
   },
   {
-    entry: ['src/index.ts'],
+    entry: { 'chat-and-react': 'src/index.ts' },
     format: ['iife'],
     globalName: 'ChatAndReact',
     outExtension: () => ({ js: '.iife.js' }),

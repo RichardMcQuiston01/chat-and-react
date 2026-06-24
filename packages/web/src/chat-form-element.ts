@@ -77,15 +77,9 @@ class InstanceStorage {
  * inside a Shadow DOM using the chat bubble aesthetic.
  */
 export class ChatFormElement extends HTMLElement {
-  static observedAttributes = [
-    'schema',
-    'user-resumable',
-    'local-storage',
-    'auto-complete',
-  ];
-
   private controller: ChatController | null = null;
   private session: SessionManager | null = null;
+  private storage: InstanceStorage | null = null;
   private renderer: Renderer | null = null;
   private shadow: ShadowRoot | null = null;
   private readonly registry = new AdapterRegistry();
@@ -106,6 +100,7 @@ export class ChatFormElement extends HTMLElement {
     this.controller?.destroy();
     this.controller = null;
     this.session = null;
+    this.storage = null;
     this.renderer = null;
     this.shadow = null;
   }
@@ -128,7 +123,8 @@ export class ChatFormElement extends HTMLElement {
       return;
     }
 
-    this.session = new SessionManager(new InstanceStorage());
+    this.storage = new InstanceStorage();
+    this.session = new SessionManager(this.storage);
 
     this.controller = new ChatController(
       {
@@ -198,21 +194,18 @@ export class ChatFormElement extends HTMLElement {
     }
 
     // Wire up per-keystroke localStorage saves when the option is enabled.
-    if (this.controller?.getOptions().localStorage && this.session) {
+    if (this.controller?.getOptions().localStorage && this.session && this.storage) {
       const sessionId = this.session.getSessionId();
+      const storage = this.storage;
       inputArea.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(
         'input:not([type="radio"]):not([type="checkbox"]), textarea',
       ).forEach((el) => {
         const questionId = (el as HTMLElement).dataset['questionId'] ?? '';
         el.addEventListener('input', () => {
-          try {
-            localStorage.setItem(
-              `car:input:${sessionId}:${questionId}`,
-              (el as HTMLInputElement).value,
-            );
-          } catch {
-            // Storage may be unavailable — swallow silently.
-          }
+          storage.setItem(
+            `car:input:${sessionId}:${questionId}`,
+            (el as HTMLInputElement).value,
+          );
         });
       });
     }

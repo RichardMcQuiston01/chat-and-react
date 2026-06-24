@@ -27,7 +27,7 @@ describe('AdapterRegistry', () => {
   });
 
   it('stores and retrieves a custom input adapter', () => {
-    const adapter: InputAdapter = { transform: async (raw) => raw as any };
+    const adapter: InputAdapter = { transform: (raw) => raw as any };
     registry.setInputAdapter(adapter);
     expect(registry.getInputAdapter()).toBe(adapter);
   });
@@ -45,7 +45,7 @@ describe('AdapterRegistry', () => {
   });
 
   it('reset() restores all adapters to defaults', () => {
-    registry.setInputAdapter({ transform: async (raw) => raw as any });
+    registry.setInputAdapter({ transform: (raw) => raw as any });
     registry.setOutputAdapter({ emit: () => {} });
     registry.setErrorAdapter({ log: () => {} });
     registry.reset();
