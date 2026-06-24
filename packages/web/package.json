@@ -7,9 +7,9 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.cjs"
     }
   },
   "scripts": {
@@ -21,7 +21,8 @@
     "@chat-and-react/core": "workspace:*"
   },
   "devDependencies": {
-    "vitest": "^1.6.0",
-    "happy-dom": "^14.0.0"
+    "happy-dom": "^14.0.0",
+    "tsup": "^8.5.1",
+    "vitest": "^1.6.0"
   }
 }
