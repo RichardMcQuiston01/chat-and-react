@@ -1,159 +1,119 @@
-import type { ChatQuestion } from '@chat-and-react/core';
+import type { ChatPage, ChatQuestion } from '@chat-and-react/core';
 
-/**
- * Appends a bot message bubble to the given container element.
- *
- * @param container - The parent element to append the bubble to.
- * @param text - The text content of the bot message.
- */
-export function appendBotBubble(container: Element, text: string): void {
-  const div = document.createElement('div');
-  div.setAttribute('part', 'bubble-bot');
-  div.textContent = text;
-  container.appendChild(div);
-}
+/** Renders chat pages and bubbles into a Shadow DOM root. */
+export class Renderer {
+  private root: ShadowRoot;
+  private chat: HTMLElement;
+  private inputArea: HTMLElement | null = null;
 
-/**
- * Appends a user response bubble to the given container element.
- *
- * @param container - The parent element to append the bubble to.
- * @param text - The text content of the user response.
- */
-export function appendUserBubble(container: Element, text: string): void {
-  const div = document.createElement('div');
-  div.setAttribute('part', 'bubble-user');
-  div.textContent = text;
-  container.appendChild(div);
-}
+  constructor(root: ShadowRoot) {
+    this.root = root;
+    this.chat = root.ownerDocument.createElement('div');
+    this.chat.className = 'car-chat';
+    this.root.appendChild(this.chat);
+  }
 
-/**
- * Removes the current input widget (input-area) from the container.
- *
- * @param container - The parent element containing the input widget.
- */
-export function removeInputWidget(container: Element): void {
-  container.querySelector('[part="input-area"]')?.remove();
-}
+  /** Render a page's questions as bot bubbles + input widgets. */
+  renderPage(page: ChatPage, visibleQuestions: ChatQuestion[]): void {
+    this.clearInputArea();
+    const pageDiv = this.root.ownerDocument.createElement('div');
+    pageDiv.className = 'car-page';
 
-/**
- * Renders an input widget for the given question and appends it to the container.
- *
- * @param container - The parent element to append the input widget to.
- * @param question - The chat question defining the input type and options.
- * @param autoComplete - Whether to enable browser autocomplete on inputs.
- * @param onSubmit - Callback invoked with the collected value(s) when the user submits.
- */
-export function renderInputWidget(
-  container: Element,
-  question: ChatQuestion,
-  autoComplete: boolean,
-  onSubmit: (value: string | string[]) => void,
-): void {
-  const area = document.createElement('div');
-  area.setAttribute('part', 'input-area');
+    if (page.title) {
+      const titleBubble = this.root.ownerDocument.createElement('div');
+      titleBubble.className = 'car-bubble';
+      titleBubble.textContent = page.title;
+      pageDiv.appendChild(titleBubble);
+    }
 
-  const inputEl = buildInputElement(question, autoComplete);
-  area.appendChild(inputEl);
+    const inputWrap = this.root.ownerDocument.createElement('div');
+    inputWrap.className = 'car-input-wrap';
 
-  const btn = document.createElement('button');
-  btn.setAttribute('part', 'submit-btn');
-  btn.textContent = 'Send';
-  btn.addEventListener('click', () => {
-    const value = extractValue(inputEl, question['x-chat-input']);
-    onSubmit(value);
-  });
-  area.appendChild(btn);
+    for (const q of visibleQuestions) {
+      const label = this.root.ownerDocument.createElement('div');
+      label.className = 'car-bubble';
+      label.textContent = q.title;
+      pageDiv.appendChild(label);
 
-  container.appendChild(area);
-}
+      const el = this.buildInput(q);
+      el.dataset['questionId'] = q.id;
+      inputWrap.appendChild(el);
+    }
 
-/**
- * Builds the appropriate input element for the given question type.
- *
- * @param question - The chat question.
- * @param autoComplete - Whether autocomplete is enabled.
- * @returns The constructed input element or wrapper.
- */
-function buildInputElement(question: ChatQuestion, autoComplete: boolean): Element {
-  const acAttr = autoComplete ? 'on' : 'off';
+    pageDiv.appendChild(inputWrap);
 
-  switch (question['x-chat-input']) {
-    case 'text': {
-      const el = document.createElement('input');
-      el.type = 'text';
-      el.autocomplete = acAttr;
-      if (question['x-chat-placeholder']) el.placeholder = question['x-chat-placeholder'];
+    const submit = this.root.ownerDocument.createElement('button');
+    submit.className = 'car-btn-submit';
+    submit.textContent = 'Continue';
+    pageDiv.appendChild(submit);
+
+    this.chat.appendChild(pageDiv);
+    this.inputArea = pageDiv;
+  }
+
+  /** Append a user-reply bubble to the chat. */
+  appendUserBubble(text: string): void {
+    const div = this.root.ownerDocument.createElement('div');
+    div.className = 'car-bubble car-bubble--user';
+    div.textContent = text;
+    this.chat.appendChild(div);
+  }
+
+  /** Remove the active input area from the chat. */
+  clearInputArea(): void {
+    if (this.inputArea) {
+      this.inputArea.remove();
+      this.inputArea = null;
+    }
+  }
+
+  private buildInput(q: ChatQuestion): HTMLElement {
+    const doc = this.root.ownerDocument;
+    const type = q['x-chat-input'];
+    const placeholder = (q['x-chat-placeholder'] as string | undefined) ?? '';
+    const options = (q.enum as string[] | undefined) ?? [];
+
+    if (type === 'textarea') {
+      const el = doc.createElement('textarea');
+      el.className = 'car-input';
+      el.placeholder = placeholder;
       return el;
     }
-    case 'textarea': {
-      const el = document.createElement('textarea');
-      el.autocomplete = acAttr;
-      if (question['x-chat-placeholder']) el.placeholder = question['x-chat-placeholder'];
-      return el;
-    }
-    case 'dropdown': {
-      const el = document.createElement('select');
-      el.autocomplete = acAttr;
-      for (const opt of question.enum ?? []) {
-        const option = document.createElement('option');
-        option.value = opt;
-        option.textContent = opt;
-        el.appendChild(option);
+
+    if (type === 'dropdown') {
+      const el = doc.createElement('select');
+      el.className = 'car-input';
+      for (const opt of options) {
+        const o = doc.createElement('option');
+        o.value = opt;
+        o.textContent = opt;
+        el.appendChild(o);
       }
       return el;
     }
-    case 'radio':
-    case 'checkbox': {
-      const wrap = document.createElement('div');
-      const type = question['x-chat-input'];
-      const opts =
-        type === 'checkbox'
-          ? (question.items?.enum ?? question.enum ?? [])
-          : (question.enum ?? []);
-      for (const opt of opts) {
-        const label = document.createElement('label');
-        const inp = document.createElement('input');
-        inp.type = type;
-        inp.name = question.id;
+
+    if (type === 'radio' || type === 'checkbox') {
+      const wrap = doc.createElement('div');
+      wrap.className = 'car-input-wrap';
+      for (const opt of options) {
+        const lbl = doc.createElement('label');
+        const inp = doc.createElement('input');
+        inp.type = type === 'radio' ? 'radio' : 'checkbox';
+        inp.name = q.id;
         inp.value = opt;
-        label.appendChild(inp);
-        label.append(` ${opt}`);
-        wrap.appendChild(label);
+        inp.className = 'car-input';
+        lbl.appendChild(inp);
+        lbl.appendChild(doc.createTextNode(opt));
+        wrap.appendChild(lbl);
       }
       return wrap;
     }
-  }
-}
 
-/**
- * Extracts the current value(s) from the input element based on the input type.
- *
- * @param inputEl - The input element or wrapper to read from.
- * @param type - The chat input type.
- * @returns A string for single-value inputs, or string array for checkbox.
- */
-function extractValue(
-  inputEl: Element,
-  type: ChatQuestion['x-chat-input'],
-): string | string[] {
-  switch (type) {
-    case 'text':
-      return (inputEl as HTMLInputElement).value;
-    case 'textarea':
-      return (inputEl as HTMLTextAreaElement).value;
-    case 'dropdown':
-      return (inputEl as HTMLSelectElement).value;
-    case 'radio': {
-      const checked = inputEl.querySelector(
-        'input[type="radio"]:checked',
-      ) as HTMLInputElement | null;
-      return checked?.value ?? '';
-    }
-    case 'checkbox': {
-      const checked = inputEl.querySelectorAll<HTMLInputElement>(
-        'input[type="checkbox"]:checked',
-      );
-      return Array.from(checked).map((el) => el.value);
-    }
+    // default: text
+    const el = doc.createElement('input');
+    el.type = 'text';
+    el.className = 'car-input';
+    el.placeholder = placeholder;
+    return el;
   }
 }

@@ -1,398 +1,260 @@
-import { describe, it, expect, vi } from 'vitest';
-import type { ChatQuestion } from '@chat-and-react/core';
-import {
-  appendBotBubble,
-  appendUserBubble,
-  removeInputWidget,
-  renderInputWidget,
-} from './renderer.js';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { Renderer } from './renderer.js';
+import type { ChatPage, ChatQuestion } from '@chat-and-react/core';
 
-/** Creates a fresh div container for each test. */
-function makeContainer(): HTMLDivElement {
-  return document.createElement('div');
+/** Creates a fresh ShadowRoot attached to a div in the document body. */
+function makeRoot(): ShadowRoot {
+  const host = document.createElement('div');
+  document.body.appendChild(host);
+  return host.attachShadow({ mode: 'open' });
 }
 
-/** Constructs a minimal ChatQuestion for a given input type. */
-function makeQuestion(
-  overrides: Partial<ChatQuestion> & { 'x-chat-input': ChatQuestion['x-chat-input'] },
-): ChatQuestion {
+/** Constructs a minimal ChatPage with the given questions. */
+function makePage(questions: ChatQuestion[]): ChatPage {
   return {
-    id: 'q1',
-    type: 'string',
-    title: 'Test question',
-    ...overrides,
+    id: 'p1',
+    title: 'Test page',
+    questions,
+    branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
   };
 }
 
-describe('appendBotBubble', () => {
-  it('appends a div with part="bubble-bot" and the given text', () => {
-    const container = makeContainer();
-    appendBotBubble(container, 'Hello!');
+/**
+ * Constructs a minimal ChatQuestion with defaults, applying any overrides.
+ * The `id` and `x-chat-input` fields are required via the Pick constraint.
+ */
+function makeQuestion(
+  overrides: Partial<ChatQuestion> & Pick<ChatQuestion, 'id' | 'x-chat-input'>,
+): ChatQuestion {
+  return {
+    title: overrides.id,
+    type: 'string',
+    ...overrides,
+  } as ChatQuestion;
+}
 
-    const bubble = container.querySelector('[part="bubble-bot"]');
+describe('Renderer — appendUserBubble', () => {
+  it('appends a .car-bubble.car-bubble--user element with the given text', () => {
+    const root = makeRoot();
+    const renderer = new Renderer(root);
+    renderer.appendUserBubble('Hello user');
+
+    const bubble = root.querySelector('.car-bubble--user');
     expect(bubble).not.toBeNull();
-    expect(bubble?.textContent).toBe('Hello!');
+    expect(bubble?.textContent).toBe('Hello user');
+    expect(bubble?.classList.contains('car-bubble')).toBe(true);
   });
 
-  it('appends multiple bot bubbles independently', () => {
-    const container = makeContainer();
-    appendBotBubble(container, 'First');
-    appendBotBubble(container, 'Second');
+  it('appends multiple user bubbles independently', () => {
+    const root = makeRoot();
+    const renderer = new Renderer(root);
+    renderer.appendUserBubble('First');
+    renderer.appendUserBubble('Second');
 
-    const bubbles = container.querySelectorAll('[part="bubble-bot"]');
+    const bubbles = root.querySelectorAll('.car-bubble--user');
     expect(bubbles).toHaveLength(2);
     expect(bubbles[0].textContent).toBe('First');
     expect(bubbles[1].textContent).toBe('Second');
   });
 });
 
-describe('appendUserBubble', () => {
-  it('appends a div with part="bubble-user" and the given text', () => {
-    const container = makeContainer();
-    appendUserBubble(container, 'My answer');
+describe('Renderer — renderPage title bubble', () => {
+  it('creates a .car-page div containing a title .car-bubble', () => {
+    const root = makeRoot();
+    const renderer = new Renderer(root);
+    const page = makePage([]);
+    renderer.renderPage(page, []);
 
-    const bubble = container.querySelector('[part="bubble-user"]');
-    expect(bubble).not.toBeNull();
-    expect(bubble?.textContent).toBe('My answer');
+    const pageDiv = root.querySelector('.car-page');
+    expect(pageDiv).not.toBeNull();
+
+    const titleBubble = pageDiv?.querySelector('.car-bubble');
+    expect(titleBubble).not.toBeNull();
+    expect(titleBubble?.textContent).toBe('Test page');
   });
 
-  it('does not interfere with bot bubbles', () => {
-    const container = makeContainer();
-    appendBotBubble(container, 'Bot says hi');
-    appendUserBubble(container, 'User replies');
+  it('renders question label bubbles inside .car-page', () => {
+    const root = makeRoot();
+    const renderer = new Renderer(root);
+    const q = makeQuestion({ id: 'q1', 'x-chat-input': 'text' });
+    const page = makePage([q]);
+    renderer.renderPage(page, [q]);
 
-    expect(container.querySelectorAll('[part="bubble-bot"]')).toHaveLength(1);
-    expect(container.querySelectorAll('[part="bubble-user"]')).toHaveLength(1);
-  });
-});
-
-describe('removeInputWidget', () => {
-  it('removes the [part="input-area"] element when present', () => {
-    const container = makeContainer();
-    const area = document.createElement('div');
-    area.setAttribute('part', 'input-area');
-    container.appendChild(area);
-
-    removeInputWidget(container);
-
-    expect(container.querySelector('[part="input-area"]')).toBeNull();
-  });
-
-  it('does nothing when no input widget is present', () => {
-    const container = makeContainer();
-    expect(() => removeInputWidget(container)).not.toThrow();
+    const pageDiv = root.querySelector('.car-page');
+    const bubbles = pageDiv?.querySelectorAll('.car-bubble');
+    // first bubble = page title, second = question label
+    expect(bubbles?.length).toBeGreaterThanOrEqual(2);
+    const labels = Array.from(bubbles ?? []).map((b) => b.textContent);
+    expect(labels).toContain('q1');
   });
 });
 
-describe('renderInputWidget — text', () => {
-  it('renders an input[type="text"] inside the input area', () => {
-    const container = makeContainer();
-    const question = makeQuestion({ 'x-chat-input': 'text' });
-    renderInputWidget(container, question, true, vi.fn());
+describe('Renderer — renderPage text input', () => {
+  it('renders an input[type="text"] with class car-input', () => {
+    const root = makeRoot();
+    const renderer = new Renderer(root);
+    const q = makeQuestion({ id: 'q-text', 'x-chat-input': 'text' });
+    renderer.renderPage(makePage([q]), [q]);
 
-    const input = container.querySelector<HTMLInputElement>('input[type="text"]');
+    const input = root.querySelector<HTMLInputElement>('input[type="text"]');
     expect(input).not.toBeNull();
-  });
-
-  it('sets autocomplete="off" when autoComplete is false', () => {
-    const container = makeContainer();
-    const question = makeQuestion({ 'x-chat-input': 'text' });
-    renderInputWidget(container, question, false, vi.fn());
-
-    const input = container.querySelector<HTMLInputElement>('input[type="text"]');
-    expect(input?.getAttribute('autocomplete')).toBe('off');
-  });
-
-  it('sets autocomplete="on" when autoComplete is true', () => {
-    const container = makeContainer();
-    const question = makeQuestion({ 'x-chat-input': 'text' });
-    renderInputWidget(container, question, true, vi.fn());
-
-    const input = container.querySelector<HTMLInputElement>('input[type="text"]');
-    expect(input?.getAttribute('autocomplete')).toBe('on');
+    expect(input?.classList.contains('car-input')).toBe(true);
   });
 
   it('sets placeholder from x-chat-placeholder', () => {
-    const container = makeContainer();
-    const question = makeQuestion({
+    const root = makeRoot();
+    const renderer = new Renderer(root);
+    const q = makeQuestion({
+      id: 'q-text',
       'x-chat-input': 'text',
-      'x-chat-placeholder': 'Type here…',
+      'x-chat-placeholder': 'Enter name',
     });
-    renderInputWidget(container, question, true, vi.fn());
+    renderer.renderPage(makePage([q]), [q]);
 
-    const input = container.querySelector<HTMLInputElement>('input[type="text"]');
-    expect(input?.placeholder).toBe('Type here…');
-  });
-
-  it('calls onSubmit with the input value when Send is clicked', () => {
-    const container = makeContainer();
-    const question = makeQuestion({ 'x-chat-input': 'text' });
-    const onSubmit = vi.fn();
-    renderInputWidget(container, question, true, onSubmit);
-
-    const input = container.querySelector<HTMLInputElement>('input[type="text"]')!;
-    input.value = 'hello world';
-
-    const btn = container.querySelector<HTMLButtonElement>('[part="submit-btn"]')!;
-    btn.click();
-
-    expect(onSubmit).toHaveBeenCalledWith('hello world');
-  });
-
-  it('renders a submit button with part="submit-btn"', () => {
-    const container = makeContainer();
-    const question = makeQuestion({ 'x-chat-input': 'text' });
-    renderInputWidget(container, question, true, vi.fn());
-
-    const btn = container.querySelector('[part="submit-btn"]');
-    expect(btn).not.toBeNull();
-    expect(btn?.textContent).toBe('Send');
+    const input = root.querySelector<HTMLInputElement>('input[type="text"]');
+    expect(input?.placeholder).toBe('Enter name');
   });
 });
 
-describe('renderInputWidget — textarea', () => {
-  it('renders a <textarea> inside the input area', () => {
-    const container = makeContainer();
-    const question = makeQuestion({ 'x-chat-input': 'textarea' });
-    renderInputWidget(container, question, true, vi.fn());
+describe('Renderer — renderPage textarea', () => {
+  it('renders a textarea with class car-input', () => {
+    const root = makeRoot();
+    const renderer = new Renderer(root);
+    const q = makeQuestion({ id: 'q-ta', 'x-chat-input': 'textarea' });
+    renderer.renderPage(makePage([q]), [q]);
 
-    expect(container.querySelector('textarea')).not.toBeNull();
-  });
-
-  it('sets autocomplete="off" on textarea when autoComplete is false', () => {
-    const container = makeContainer();
-    const question = makeQuestion({ 'x-chat-input': 'textarea' });
-    renderInputWidget(container, question, false, vi.fn());
-
-    const ta = container.querySelector<HTMLTextAreaElement>('textarea');
-    expect(ta?.getAttribute('autocomplete')).toBe('off');
-  });
-
-  it('calls onSubmit with textarea value on click', () => {
-    const container = makeContainer();
-    const question = makeQuestion({ 'x-chat-input': 'textarea' });
-    const onSubmit = vi.fn();
-    renderInputWidget(container, question, true, onSubmit);
-
-    const ta = container.querySelector<HTMLTextAreaElement>('textarea')!;
-    ta.value = 'multi\nline';
-
-    container.querySelector<HTMLButtonElement>('[part="submit-btn"]')!.click();
-
-    expect(onSubmit).toHaveBeenCalledWith('multi\nline');
+    const ta = root.querySelector<HTMLTextAreaElement>('textarea');
+    expect(ta).not.toBeNull();
+    expect(ta?.classList.contains('car-input')).toBe(true);
   });
 });
 
-describe('renderInputWidget — dropdown', () => {
-  it('renders a <select> with options from enum', () => {
-    const container = makeContainer();
-    const question = makeQuestion({
+describe('Renderer — renderPage dropdown', () => {
+  it('renders a select with class car-input and the correct options', () => {
+    const root = makeRoot();
+    const renderer = new Renderer(root);
+    const q = makeQuestion({
+      id: 'q-dd',
       'x-chat-input': 'dropdown',
-      enum: ['Option A', 'Option B', 'Option C'],
+      enum: ['Alpha', 'Beta', 'Gamma'],
     });
-    renderInputWidget(container, question, true, vi.fn());
+    renderer.renderPage(makePage([q]), [q]);
 
-    const select = container.querySelector<HTMLSelectElement>('select');
+    const select = root.querySelector<HTMLSelectElement>('select');
     expect(select).not.toBeNull();
+    expect(select?.classList.contains('car-input')).toBe(true);
     expect(select?.options).toHaveLength(3);
-    expect(select?.options[0].value).toBe('Option A');
-    expect(select?.options[2].value).toBe('Option C');
-  });
-
-  it('calls onSubmit with selected value on click', () => {
-    const container = makeContainer();
-    const question = makeQuestion({
-      'x-chat-input': 'dropdown',
-      enum: ['Red', 'Green', 'Blue'],
-    });
-    const onSubmit = vi.fn();
-    renderInputWidget(container, question, true, onSubmit);
-
-    const select = container.querySelector<HTMLSelectElement>('select')!;
-    select.value = 'Green';
-
-    container.querySelector<HTMLButtonElement>('[part="submit-btn"]')!.click();
-
-    expect(onSubmit).toHaveBeenCalledWith('Green');
-  });
-
-  it('renders an empty select when enum is absent', () => {
-    const container = makeContainer();
-    const question = makeQuestion({ 'x-chat-input': 'dropdown' });
-    renderInputWidget(container, question, true, vi.fn());
-
-    const select = container.querySelector<HTMLSelectElement>('select');
-    expect(select?.options).toHaveLength(0);
+    expect(select?.options[0].value).toBe('Alpha');
+    expect(select?.options[2].value).toBe('Gamma');
   });
 });
 
-describe('renderInputWidget — radio', () => {
+describe('Renderer — renderPage radio', () => {
   it('renders one radio input per enum option', () => {
-    const container = makeContainer();
-    const question = makeQuestion({
+    const root = makeRoot();
+    const renderer = new Renderer(root);
+    const q = makeQuestion({
+      id: 'q-radio',
       'x-chat-input': 'radio',
       enum: ['Yes', 'No', 'Maybe'],
     });
-    renderInputWidget(container, question, true, vi.fn());
+    renderer.renderPage(makePage([q]), [q]);
 
-    const radios = container.querySelectorAll<HTMLInputElement>('input[type="radio"]');
+    const radios = root.querySelectorAll<HTMLInputElement>('input[type="radio"]');
     expect(radios).toHaveLength(3);
+    expect(radios[0].value).toBe('Yes');
+    expect(radios[2].value).toBe('Maybe');
   });
 
-  it('sets name attribute to question id on each radio', () => {
-    const container = makeContainer();
-    const question = makeQuestion({
-      id: 'mood',
-      'x-chat-input': 'radio',
-      enum: ['Happy', 'Sad'],
-    });
-    renderInputWidget(container, question, true, vi.fn());
-
-    const radios = container.querySelectorAll<HTMLInputElement>('input[type="radio"]');
-    radios.forEach((r) => expect(r.name).toBe('mood'));
-  });
-
-  it('wraps each radio in a <label>', () => {
-    const container = makeContainer();
-    const question = makeQuestion({
+  it('wraps each radio in a label', () => {
+    const root = makeRoot();
+    const renderer = new Renderer(root);
+    const q = makeQuestion({
+      id: 'q-radio',
       'x-chat-input': 'radio',
       enum: ['A', 'B'],
     });
-    renderInputWidget(container, question, true, vi.fn());
+    renderer.renderPage(makePage([q]), [q]);
 
-    const labels = container.querySelectorAll('label');
+    const labels = root.querySelectorAll('label');
     expect(labels).toHaveLength(2);
   });
-
-  it('calls onSubmit with the checked radio value on click', () => {
-    const container = makeContainer();
-    const question = makeQuestion({
-      'x-chat-input': 'radio',
-      enum: ['Yes', 'No'],
-    });
-    const onSubmit = vi.fn();
-    renderInputWidget(container, question, true, onSubmit);
-
-    const radios = container.querySelectorAll<HTMLInputElement>('input[type="radio"]');
-    radios[1].checked = true;
-
-    container.querySelector<HTMLButtonElement>('[part="submit-btn"]')!.click();
-
-    expect(onSubmit).toHaveBeenCalledWith('No');
-  });
-
-  it('calls onSubmit with empty string when no radio is checked', () => {
-    const container = makeContainer();
-    const question = makeQuestion({
-      'x-chat-input': 'radio',
-      enum: ['Yes', 'No'],
-    });
-    const onSubmit = vi.fn();
-    renderInputWidget(container, question, true, onSubmit);
-
-    container.querySelector<HTMLButtonElement>('[part="submit-btn"]')!.click();
-
-    expect(onSubmit).toHaveBeenCalledWith('');
-  });
 });
 
-describe('renderInputWidget — checkbox', () => {
-  it('renders one checkbox per items.enum option', () => {
-    const container = makeContainer();
-    const question = makeQuestion({
-      id: 'colors',
-      type: 'array',
+describe('Renderer — renderPage checkbox', () => {
+  it('renders one checkbox input per enum option', () => {
+    const root = makeRoot();
+    const renderer = new Renderer(root);
+    const q = makeQuestion({
+      id: 'q-chk',
       'x-chat-input': 'checkbox',
-      items: { enum: ['Red', 'Green', 'Blue'] },
+      enum: ['Red', 'Green', 'Blue'],
     });
-    renderInputWidget(container, question, true, vi.fn());
+    renderer.renderPage(makePage([q]), [q]);
 
-    const checkboxes = container.querySelectorAll<HTMLInputElement>(
-      'input[type="checkbox"]',
-    );
+    const checkboxes = root.querySelectorAll<HTMLInputElement>('input[type="checkbox"]');
     expect(checkboxes).toHaveLength(3);
+    expect(checkboxes[0].value).toBe('Red');
   });
 
-  it('falls back to enum when items is absent', () => {
-    const container = makeContainer();
-    const question = makeQuestion({
+  it('wraps each checkbox in a label', () => {
+    const root = makeRoot();
+    const renderer = new Renderer(root);
+    const q = makeQuestion({
+      id: 'q-chk',
       'x-chat-input': 'checkbox',
-      enum: ['A', 'B'],
+      enum: ['One', 'Two'],
     });
-    renderInputWidget(container, question, true, vi.fn());
+    renderer.renderPage(makePage([q]), [q]);
 
-    const checkboxes = container.querySelectorAll<HTMLInputElement>(
-      'input[type="checkbox"]',
-    );
-    expect(checkboxes).toHaveLength(2);
-  });
-
-  it('calls onSubmit with all checked values as an array', () => {
-    const container = makeContainer();
-    const question = makeQuestion({
-      id: 'tags',
-      type: 'array',
-      'x-chat-input': 'checkbox',
-      items: { enum: ['TypeScript', 'React', 'Node'] },
-    });
-    const onSubmit = vi.fn();
-    renderInputWidget(container, question, true, onSubmit);
-
-    const checkboxes = container.querySelectorAll<HTMLInputElement>(
-      'input[type="checkbox"]',
-    );
-    checkboxes[0].checked = true;
-    checkboxes[2].checked = true;
-
-    container.querySelector<HTMLButtonElement>('[part="submit-btn"]')!.click();
-
-    expect(onSubmit).toHaveBeenCalledWith(['TypeScript', 'Node']);
-  });
-
-  it('calls onSubmit with empty array when no checkbox is checked', () => {
-    const container = makeContainer();
-    const question = makeQuestion({
-      'x-chat-input': 'checkbox',
-      items: { enum: ['X', 'Y'] },
-    });
-    const onSubmit = vi.fn();
-    renderInputWidget(container, question, true, onSubmit);
-
-    container.querySelector<HTMLButtonElement>('[part="submit-btn"]')!.click();
-
-    expect(onSubmit).toHaveBeenCalledWith([]);
-  });
-
-  it('wraps each checkbox in a <label>', () => {
-    const container = makeContainer();
-    const question = makeQuestion({
-      'x-chat-input': 'checkbox',
-      items: { enum: ['One', 'Two', 'Three'] },
-    });
-    renderInputWidget(container, question, true, vi.fn());
-
-    const labels = container.querySelectorAll('label');
-    expect(labels).toHaveLength(3);
+    const labels = root.querySelectorAll('label');
+    expect(labels).toHaveLength(2);
   });
 });
 
-describe('renderInputWidget — input area structure', () => {
-  it('wraps everything in a div with part="input-area"', () => {
-    const container = makeContainer();
-    const question = makeQuestion({ 'x-chat-input': 'text' });
-    renderInputWidget(container, question, true, vi.fn());
+describe('Renderer — clearInputArea', () => {
+  it('removes the current .car-page div', () => {
+    const root = makeRoot();
+    const renderer = new Renderer(root);
+    renderer.renderPage(makePage([]), []);
+    expect(root.querySelector('.car-page')).not.toBeNull();
 
-    const area = container.querySelector('[part="input-area"]');
-    expect(area).not.toBeNull();
+    renderer.clearInputArea();
+    expect(root.querySelector('.car-page')).toBeNull();
   });
 
-  it('removeInputWidget removes the area rendered by renderInputWidget', () => {
-    const container = makeContainer();
-    const question = makeQuestion({ 'x-chat-input': 'text' });
-    renderInputWidget(container, question, true, vi.fn());
-    expect(container.querySelector('[part="input-area"]')).not.toBeNull();
+  it('does nothing when no page has been rendered', () => {
+    const root = makeRoot();
+    const renderer = new Renderer(root);
+    expect(() => renderer.clearInputArea()).not.toThrow();
+  });
+});
 
-    removeInputWidget(container);
-    expect(container.querySelector('[part="input-area"]')).toBeNull();
+describe('Renderer — second renderPage clears first', () => {
+  it('replaces the first page with the second on a second call', () => {
+    const root = makeRoot();
+    const renderer = new Renderer(root);
+
+    const page1: ChatPage = {
+      id: 'p1',
+      title: 'Page One',
+      questions: [],
+      branching: [{ type: 'always', destination_id: 'p2' }],
+    };
+    const page2: ChatPage = {
+      id: 'p2',
+      title: 'Page Two',
+      questions: [],
+      branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
+    };
+
+    renderer.renderPage(page1, []);
+    renderer.renderPage(page2, []);
+
+    const pages = root.querySelectorAll('.car-page');
+    expect(pages).toHaveLength(1);
+
+    const titleBubble = root.querySelector('.car-page .car-bubble');
+    expect(titleBubble?.textContent).toBe('Page Two');
   });
 });
