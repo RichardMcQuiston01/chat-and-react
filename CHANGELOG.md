@@ -6,6 +6,18 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.4.0] — 2026-06-25
+
+### Added
+
+**Docker support** — multi-stage Docker image and Compose file for running the demo SPA without installing Bun or Node locally
+
+- `packages/demo/Dockerfile` — two-stage build: `oven/bun:1-alpine` builds `core` → `web` → `demo` in dependency order; `nginx:alpine` serves the resulting static assets on port 80
+- `docker-compose.yml` (repo root) — maps container port 80 to host port 8080; `docker compose up --build` is all that's needed
+- `.dockerignore` (repo root) — excludes `.git`, `node_modules`, `dist`, and `.turbo` directories to keep the build context small
+
+---
+
 ## [0.3.0] — 2026-06-24
 
 ### Added

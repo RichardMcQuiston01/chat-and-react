@@ -99,6 +99,26 @@ bun run build   # output written to packages/demo/dist/
 bun run preview # serve the built output locally
 ```
 
+### Running the demo with Docker
+
+A pre-configured multi-stage Dockerfile is included. The image builds the full
+workspace (core → web → demo) and serves the output with nginx — no Bun or Node
+required on the host.
+
+```bash
+# Build and run with Docker directly (from the repo root)
+docker build -f packages/demo/Dockerfile -t chat-and-react-demo .
+docker run --rm -p 8080:80 chat-and-react-demo
+```
+
+Or use Docker Compose (repo root):
+
+```bash
+docker compose up --build
+```
+
+Open `http://localhost:8080` in your browser. The demo is served on port **8080**.
+
 ---
 
 ## Schema Builder
