@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { emptySchema, emptyPage, emptyQuestion } from './schema-helpers.js';
-import { parseSchema } from '@chat-and-react/core';
+import { parseSchema } from '@richardmcquiston01/chat-and-react-core';
 
 describe('emptySchema', () => {
   it('produces a schema that parseSchema accepts without throwing', () => {

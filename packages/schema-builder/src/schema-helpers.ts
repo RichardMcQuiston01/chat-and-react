@@ -1,4 +1,4 @@
-import type { ChatSchema, ChatPage, ChatQuestion } from '@chat-and-react/core';
+import type { ChatSchema, ChatPage, ChatQuestion } from '@richardmcquiston01/chat-and-react-core';
 
 function uniqueId(prefix: string, existing: string[]): string {
   let n = 1;

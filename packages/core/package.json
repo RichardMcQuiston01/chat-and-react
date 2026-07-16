@@ -1,6 +1,26 @@
 {
-  "name": "@chat-and-react/core",
-  "version": "0.1.0",
+  "name": "@richardmcquiston01/chat-and-react-core",
+  "version": "0.5.0",
+  "description": "Headless controller, JSON Schema validation, and session management for chat-and-react — a framework-agnostic conversational form library.",
+  "license": "Apache-2.0",
+  "author": "Richard McQuiston <richard.mcquiston01@gmail.com>",
+  "homepage": "https://github.com/RichardMcQuiston01/chat-and-react#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RichardMcQuiston01/chat-and-react.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/RichardMcQuiston01/chat-and-react/issues"
+  },
+  "keywords": [
+    "chat",
+    "form",
+    "conversational-form",
+    "json-schema",
+    "typescript",
+    "headless"
+  ],
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
@@ -12,8 +32,15 @@
       "require": "./dist/index.cjs"
     }
   },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsup",
+    "prepublishOnly": "bun run build",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

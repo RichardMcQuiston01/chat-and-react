@@ -1,4 +1,4 @@
-import type { ChatSchema, ChatPage } from '@chat-and-react/core';
+import type { ChatSchema, ChatPage } from '@richardmcquiston01/chat-and-react-core';
 import type { BuilderAction } from '../reducer.js';
 import { QuestionCard } from './QuestionCard.js';
 import { BranchingCard } from './BranchingCard.js';

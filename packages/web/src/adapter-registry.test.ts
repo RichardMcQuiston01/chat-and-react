@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { AdapterRegistry } from './adapter-registry.js';
-import type { InputAdapter, OutputAdapter, ErrorLogAdapter } from '@chat-and-react/core';
+import type { InputAdapter, OutputAdapter, ErrorLogAdapter } from '@richardmcquiston01/chat-and-react-core';
 import {
   IdentityInputAdapter,
   BrowserEventAdapter,
   ConsoleErrorAdapter,
-} from '@chat-and-react/core';
+} from '@richardmcquiston01/chat-and-react-core';
 
 describe('AdapterRegistry', () => {
   let registry: AdapterRegistry;

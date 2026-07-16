@@ -1,6 +1,28 @@
 {
-  "name": "@chat-and-react/adapters",
-  "version": "0.1.0",
+  "name": "@richardmcquiston01/chat-and-react-adapters",
+  "version": "0.5.0",
+  "description": "Optional input, output, and error-log adapters (webhook, WebSocket, MongoDB, MySQL, EventEmitter) for chat-and-react.",
+  "license": "Apache-2.0",
+  "author": "Richard McQuiston <richard.mcquiston01@gmail.com>",
+  "homepage": "https://github.com/RichardMcQuiston01/chat-and-react#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RichardMcQuiston01/chat-and-react.git",
+    "directory": "packages/adapters"
+  },
+  "bugs": {
+    "url": "https://github.com/RichardMcQuiston01/chat-and-react/issues"
+  },
+  "keywords": [
+    "chat",
+    "form",
+    "adapter",
+    "webhook",
+    "websocket",
+    "mongodb",
+    "mysql",
+    "typescript"
+  ],
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
@@ -12,13 +34,20 @@
       "require": "./dist/index.cjs"
     }
   },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsup",
+    "prepublishOnly": "bun run build",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@chat-and-react/core": "workspace:*"
+    "@richardmcquiston01/chat-and-react-core": "workspace:*"
   },
   "peerDependencies": {
     "mongodb": ">=5.0.0",

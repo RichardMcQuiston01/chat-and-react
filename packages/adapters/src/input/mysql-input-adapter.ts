@@ -1,4 +1,4 @@
-import type { InputAdapter } from '@chat-and-react/core';
+import type { InputAdapter } from '@richardmcquiston01/chat-and-react-core';
 
 interface MySqlConnectionLike {
   execute(sql: string, params?: unknown[]): Promise<[unknown[], unknown]>;

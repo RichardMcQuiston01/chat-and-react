@@ -1,5 +1,5 @@
-import { ChatController, SessionManager } from '@chat-and-react/core';
-import type { ChatQuestion, ChatEvent, AnswerMap } from '@chat-and-react/core';
+import { ChatController, SessionManager } from '@richardmcquiston01/chat-and-react-core';
+import type { ChatQuestion, ChatEvent, AnswerMap } from '@richardmcquiston01/chat-and-react-core';
 import { AdapterRegistry } from './adapter-registry.js';
 import { Renderer } from './renderer.js';
 import { getStyles } from './styles.js';

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { WebhookOutputAdapter } from './webhook-output-adapter.js';
-import type { ChatEvent } from '@chat-and-react/core';
+import type { ChatEvent } from '@richardmcquiston01/chat-and-react-core';
 
 const PAGE_EVENT: ChatEvent = {
   type: 'page:submit',

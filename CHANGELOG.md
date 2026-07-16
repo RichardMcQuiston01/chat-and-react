@@ -6,6 +6,21 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.5.0] — 2026-07-15
+
+### Changed
+
+**npm publish readiness** — renamed the three publishable packages under the `@richardmcquiston01` npm scope and filled in the metadata needed for a clean `npm publish`
+
+- Renamed `chat-and-react` → `@richardmcquiston01/chat-and-react`, `@chat-and-react/core` → `@richardmcquiston01/chat-and-react-core`, `@chat-and-react/adapters` → `@richardmcquiston01/chat-and-react-adapters`; updated all internal imports, the `chat-and-react-demo` and `chat-and-react-schema-builder` workspace dependencies, and the root `README.md`
+- Added `description`, `license`, `author`, `repository`, `homepage`, `bugs`, and `keywords` fields to each publishable package's `package.json`
+- Added `"files": ["dist"]` so published tarballs contain only build output, not source/config files
+- Added `"publishConfig": { "access": "public" }` so the scoped packages publish as public rather than defaulting to a private (paid) scope
+- Added a per-package `README.md` and a copy of `LICENSE` to `packages/core`, `packages/adapters`, and `packages/web`, since each publishes from its own subdirectory and npm only auto-includes files that live inside the published package root
+- Bumped all three publishable packages from `0.1.0` to `0.5.0` to match the version this CHANGELOG had already reached
+
+---
+
 ## [0.4.0] — 2026-06-25
 
 ### Added

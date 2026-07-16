@@ -1,6 +1,27 @@
 {
-  "name": "chat-and-react",
-  "version": "0.1.0",
+  "name": "@richardmcquiston01/chat-and-react",
+  "version": "0.5.0",
+  "description": "A framework-agnostic Web Component that renders a chat-style form interface from a JSON schema, with branching logic and pluggable adapters.",
+  "license": "Apache-2.0",
+  "author": "Richard McQuiston <richard.mcquiston01@gmail.com>",
+  "homepage": "https://github.com/RichardMcQuiston01/chat-and-react#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RichardMcQuiston01/chat-and-react.git",
+    "directory": "packages/web"
+  },
+  "bugs": {
+    "url": "https://github.com/RichardMcQuiston01/chat-and-react/issues"
+  },
+  "keywords": [
+    "chat",
+    "form",
+    "conversational-form",
+    "web-component",
+    "custom-element",
+    "json-schema",
+    "typescript"
+  ],
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
@@ -12,13 +33,20 @@
       "require": "./dist/index.cjs"
     }
   },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsup",
+    "prepublishOnly": "bun run build",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@chat-and-react/core": "workspace:*"
+    "@richardmcquiston01/chat-and-react-core": "workspace:*"
   },
   "devDependencies": {
     "happy-dom": "^14.0.0",

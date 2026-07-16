@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { WebSocketOutputAdapter } from './websocket-output-adapter.js';
-import type { ChatEvent } from '@chat-and-react/core';
+import type { ChatEvent } from '@richardmcquiston01/chat-and-react-core';
 
 const COMPLETE_EVENT: ChatEvent = {
   type: 'form:complete',

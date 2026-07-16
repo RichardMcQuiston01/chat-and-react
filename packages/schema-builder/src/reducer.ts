@@ -1,4 +1,4 @@
-import type { ChatSchema, ChatOptions, ChatPage, ChatQuestion, BranchingRule } from '@chat-and-react/core';
+import type { ChatSchema, ChatOptions, ChatPage, ChatQuestion, BranchingRule } from '@richardmcquiston01/chat-and-react-core';
 import { emptySchema, emptyPage, emptyQuestion } from './schema-helpers.js';
 
 export interface BuilderState {

@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "chat-and-react": "workspace:*"
+    "@richardmcquiston01/chat-and-react": "workspace:*"
   },
   "devDependencies": {
     "vite": "^5.0.0"

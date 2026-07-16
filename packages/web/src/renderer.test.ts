@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Renderer } from './renderer.js';
-import type { ChatPage, ChatQuestion } from '@chat-and-react/core';
+import type { ChatPage, ChatQuestion } from '@richardmcquiston01/chat-and-react-core';
 
 /** Creates a fresh ShadowRoot attached to a div in the document body. */
 function makeRoot(): ShadowRoot {

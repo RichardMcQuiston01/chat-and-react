@@ -1,4 +1,4 @@
-import 'chat-and-react';
+import '@richardmcquiston01/chat-and-react';
 import { demoSchema } from './demo-schema.js';
 
 const chatForm = document.getElementById('chat') as HTMLElement;

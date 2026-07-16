@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { WebhookErrorAdapter } from './webhook-error-adapter.js';
-import type { ChatError } from '@chat-and-react/core';
+import type { ChatError } from '@richardmcquiston01/chat-and-react-core';
 
 const ERROR: ChatError = { code: 'ADAPTER_ERROR', message: 'something went wrong' };
 

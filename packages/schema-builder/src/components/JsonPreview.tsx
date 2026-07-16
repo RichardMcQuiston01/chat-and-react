@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { ChatSchema } from '@chat-and-react/core';
+import type { ChatSchema } from '@richardmcquiston01/chat-and-react-core';
 
 interface Props {
   schema: ChatSchema;

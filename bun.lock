@@ -11,10 +11,10 @@
       },
     },
     "packages/adapters": {
-      "name": "@chat-and-react/adapters",
-      "version": "0.1.0",
+      "name": "@richardmcquiston01/chat-and-react-adapters",
+      "version": "0.5.0",
       "dependencies": {
-        "@chat-and-react/core": "workspace:*",
+        "@richardmcquiston01/chat-and-react-core": "workspace:*",
       },
       "devDependencies": {
         "@types/node": "^20.0.0",
@@ -33,8 +33,8 @@
       ],
     },
     "packages/core": {
-      "name": "@chat-and-react/core",
-      "version": "0.1.0",
+      "name": "@richardmcquiston01/chat-and-react-core",
+      "version": "0.5.0",
       "dependencies": {
         "json-logic-js": "^2.0.2",
       },
@@ -48,7 +48,7 @@
       "name": "chat-and-react-demo",
       "version": "0.1.0",
       "dependencies": {
-        "chat-and-react": "workspace:*",
+        "@richardmcquiston01/chat-and-react": "workspace:*",
       },
       "devDependencies": {
         "vite": "^5.0.0",
@@ -58,7 +58,7 @@
       "name": "chat-and-react-schema-builder",
       "version": "0.1.0",
       "dependencies": {
-        "@chat-and-react/core": "workspace:*",
+        "@richardmcquiston01/chat-and-react-core": "workspace:*",
         "react": "^18.3.0",
         "react-dom": "^18.3.0",
       },
@@ -72,10 +72,10 @@
       },
     },
     "packages/web": {
-      "name": "chat-and-react",
-      "version": "0.1.0",
+      "name": "@richardmcquiston01/chat-and-react",
+      "version": "0.5.0",
       "dependencies": {
-        "@chat-and-react/core": "workspace:*",
+        "@richardmcquiston01/chat-and-react-core": "workspace:*",
       },
       "devDependencies": {
         "happy-dom": "^14.0.0",
@@ -132,10 +132,6 @@
     "@babel/types": ["@babel/types@7.29.7", "", { "dependencies": { "@babel/helper-string-parser": "^7.29.7", "@babel/helper-validator-identifier": "^7.29.7" } }, "sha512-4zBIxpPzowiZpusoFkyGVwakdRJUyuH5PxQ/PrqghfdFWWasvnCdPfQXHrenDai+gyLARulZjZowCOj6fjT4pA=="],
 
     "@bramus/specificity": ["@bramus/specificity@2.4.2", "", { "dependencies": { "css-tree": "^3.0.0" }, "bin": { "specificity": "bin/cli.js" } }, "sha512-ctxtJ/eA+t+6q2++vj5j7FYX3nRu311q1wfYH3xjlLOsczhlhxAg2FWNUXhpGvAw3BWo1xBcvOV6/YLc2r5FJw=="],
-
-    "@chat-and-react/adapters": ["@chat-and-react/adapters@workspace:packages/adapters"],
-
-    "@chat-and-react/core": ["@chat-and-react/core@workspace:packages/core"],
 
     "@csstools/color-helpers": ["@csstools/color-helpers@6.0.2", "", {}, "sha512-LMGQLS9EuADloEFkcTBR3BwV/CGHV7zyDxVRtVDTwdI2Ca4it0CCVTT9wCkxSgokjE5Ho41hEPgb8OEUwoXr6Q=="],
 
@@ -216,6 +212,12 @@
     "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
 
     "@mongodb-js/saslprep": ["@mongodb-js/saslprep@1.4.11", "", { "dependencies": { "sparse-bitfield": "^3.0.3" } }, "sha512-o9rAHc0IpIjuPSxRutWpE1F62x7n+4mVS4rCNHkzhIUMQcc18bb6xEq5wd2NdN0WjepIyXIppRshYI2kQDOZVA=="],
+
+    "@richardmcquiston01/chat-and-react": ["@richardmcquiston01/chat-and-react@workspace:packages/web"],
+
+    "@richardmcquiston01/chat-and-react-adapters": ["@richardmcquiston01/chat-and-react-adapters@workspace:packages/adapters"],
+
+    "@richardmcquiston01/chat-and-react-core": ["@richardmcquiston01/chat-and-react-core@workspace:packages/core"],
 
     "@rolldown/pluginutils": ["@rolldown/pluginutils@1.0.0-beta.27", "", {}, "sha512-+d0F4MKMCbeVUJwG96uQ4SgAznZNSq93I3V+9NHA4OpvqG8mRCpGdKmK8l/dl02h2CCDHwW2FqilnTyDcAnqjA=="],
 
@@ -334,8 +336,6 @@
     "caniuse-lite": ["caniuse-lite@1.0.30001799", "", {}, "sha512-hG1bReV+OUU+MOqK4t/ZWI0tZOyz3rqS9XuhOUz1cIcbwBKjOyJEJuw9ER5JuNyqxNk8u/JUVbGibBOL1yrjFw=="],
 
     "chai": ["chai@4.5.0", "", { "dependencies": { "assertion-error": "^1.1.0", "check-error": "^1.0.3", "deep-eql": "^4.1.3", "get-func-name": "^2.0.2", "loupe": "^2.3.6", "pathval": "^1.1.1", "type-detect": "^4.1.0" } }, "sha512-RITGBfijLkBddZvnn8jdqoTypxvqbOLYQkGGxXzeFjVHvudaPw0HNFD9x928/eUwYWd2dPCugVqspGALTZZQKw=="],
-
-    "chat-and-react": ["chat-and-react@workspace:packages/web"],
 
     "chat-and-react-demo": ["chat-and-react-demo@workspace:packages/demo"],
 

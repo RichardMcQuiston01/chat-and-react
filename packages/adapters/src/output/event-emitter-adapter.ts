@@ -1,4 +1,4 @@
-import type { OutputAdapter, ChatEvent } from '@chat-and-react/core';
+import type { OutputAdapter, ChatEvent } from '@richardmcquiston01/chat-and-react-core';
 
 interface EventEmitterLike {
   emit(event: string, ...args: unknown[]): void;

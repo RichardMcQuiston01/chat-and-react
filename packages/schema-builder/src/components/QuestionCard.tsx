@@ -1,4 +1,4 @@
-import type { ChatQuestion, ChatInputType } from '@chat-and-react/core';
+import type { ChatQuestion, ChatInputType } from '@richardmcquiston01/chat-and-react-core';
 import type { BuilderAction } from '../reducer.js';
 
 const INPUT_TYPES: ChatInputType[] = ['text', 'textarea', 'dropdown', 'radio', 'checkbox'];

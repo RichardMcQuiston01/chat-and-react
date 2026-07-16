@@ -1,4 +1,4 @@
-import type { BranchingRule } from '@chat-and-react/core';
+import type { BranchingRule } from '@richardmcquiston01/chat-and-react-core';
 import type { BuilderAction } from '../reducer.js';
 
 interface Props {

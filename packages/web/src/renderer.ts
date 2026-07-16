@@ -1,4 +1,4 @@
-import type { ChatPage, ChatQuestion } from '@chat-and-react/core';
+import type { ChatPage, ChatQuestion } from '@richardmcquiston01/chat-and-react-core';
 
 /** Renders chat pages and bubbles into a Shadow DOM root. */
 export class Renderer {

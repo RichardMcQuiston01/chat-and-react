@@ -1,4 +1,4 @@
-import type { InputAdapter } from '@chat-and-react/core';
+import type { InputAdapter } from '@richardmcquiston01/chat-and-react-core';
 
 interface MongoCollectionLike {
   findOne(filter: object): Promise<object | null>;

@@ -1,4 +1,4 @@
-import type { ChatSchema } from '@chat-and-react/core';
+import type { ChatSchema } from '@richardmcquiston01/chat-and-react-core';
 import type { BuilderAction } from '../reducer.js';
 
 interface Props {
