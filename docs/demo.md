@@ -53,7 +53,7 @@ To turn it on, do this once:
 2. Go to **Settings → Pages**.
 3. Under **Build and deployment**, set **Source** to **GitHub Actions**.
 
-After the workflow runs, the demo is at `https://<your-username>.github.io/chat-and-react/`.
+After the workflow runs, the demo is at [richardmcquiston01.github.io/chat-and-react](https://richardmcquiston01.github.io/chat-and-react/).
 
 The demo uses relative file paths, so it works from that sub-folder with no extra setup.
 

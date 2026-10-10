@@ -2,6 +2,8 @@
 
 A TypeScript library that turns a form into a chat. It works as a Web Component, so it runs with any framework (or none). You give it a JSON schema that lists your questions, the paths between them, and the type of answer you want. The library runs the conversation and sends events as the user moves along.
 
+**[Try the live demo](https://richardmcquiston01.github.io/chat-and-react/)**
+
 ## Installation
 
 ```bash
