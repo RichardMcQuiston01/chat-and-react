@@ -43,6 +43,20 @@ bun run build   # files are written to packages/demo/dist/
 bun run preview # view the built site on your computer
 ```
 
+## Host the demo on GitHub Pages
+
+The demo is set up to deploy to GitHub Pages. A workflow in `.github/workflows/deploy-demo.yml` builds it and publishes it each time changes to the demo, core, or web packages land on `main`. You can also run it by hand from the **Actions** tab.
+
+To turn it on, do this once:
+
+1. Open your repository on GitHub.
+2. Go to **Settings → Pages**.
+3. Under **Build and deployment**, set **Source** to **GitHub Actions**.
+
+After the workflow runs, the demo is at `https://<your-username>.github.io/chat-and-react/`.
+
+The demo uses relative file paths, so it works from that sub-folder with no extra setup.
+
 ## Run the demo with Docker
 
 The repo includes a Dockerfile. It builds the whole project (core, then web, then demo) and serves it with nginx. You do not need Bun or Node on your computer.
