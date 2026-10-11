@@ -1,5 +1,7 @@
 import '@richardmcquiston01/chat-and-react';
 import { demoSchema } from './demo-schema.js';
+import './donate-widget.css';
+import './donate-widget.js';
 
 const chatForm = document.getElementById('chat') as HTMLElement;
 const eventLog = document.getElementById('event-log') as HTMLElement;
