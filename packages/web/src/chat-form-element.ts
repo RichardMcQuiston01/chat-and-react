@@ -242,6 +242,9 @@ export class ChatFormElement extends HTMLElement {
     // the form does not grab focus (and scroll the page) when it loads.
     if (autofocus) {
       inputArea.querySelector<HTMLElement>('input, select, textarea')?.focus();
+      // Keep the Continue button on screen as the chat history grows. Optional
+      // call: some DOM environments do not implement scrollIntoView.
+      btn?.scrollIntoView?.({ block: 'nearest' });
     }
   }
 
