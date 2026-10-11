@@ -9,6 +9,33 @@ const MAX_NUMBERED_OPTIONS = 9;
 /** Time the fade-out lasts before a hidden bubble is removed from the layout. */
 const HIDE_FADE_MS = 300;
 
+/** What to show in place of a question while the "bot" is thinking. */
+export interface ThinkingConfig {
+  /** How long the thinking bubble stays, in milliseconds. */
+  delay: number;
+  /** Text to show instead of the animated dots. */
+  text?: string;
+}
+
+export interface RenderPageOptions {
+  showTitle?: boolean;
+  /** Answers to pre-fill into the inputs. */
+  values?: AnswerMap;
+  /** Milliseconds per character for the typing effect. 0 or missing shows the question at once. */
+  typingSpeed?: number;
+  /** Shows a thinking bubble for this long before the first question appears. */
+  thinking?: ThinkingConfig | null;
+  /** Show the icon on the Continue button. Defaults to true. */
+  showContinueIcon?: boolean;
+  /**
+   * Called once the question is fully shown and its input is ready. Runs straight
+   * away when there is no thinking or typing, otherwise after they finish.
+   */
+  onReady?: () => void;
+}
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
 /** Renders chat pages and bubbles into a Shadow DOM root. */
 export class Renderer {
   private root: ShadowRoot;
@@ -17,6 +44,7 @@ export class Renderer {
   private inputArea: HTMLElement | null = null;
   private editable = false;
   private editHandler: EditHandler | null = null;
+  private animationTimers = new Set<number>();
 
   constructor(root: ShadowRoot) {
     this.root = root;
@@ -71,7 +99,7 @@ export class Renderer {
   renderPage(
     page: ChatPage,
     visibleQuestions: ChatQuestion[],
-    options: { showTitle?: boolean; values?: AnswerMap } = {},
+    options: RenderPageOptions = {},
   ): void {
     this.clearInputArea();
     const doc = this.root.ownerDocument;
@@ -91,6 +119,10 @@ export class Renderer {
     inputWrap.className = 'car-input-wrap';
     inputWrap.setAttribute('part', 'input-wrap');
 
+    let firstLabel: HTMLElement | null = null;
+    let firstTitle = '';
+    const hiddenUntilReady: HTMLElement[] = [];
+
     for (const q of visibleQuestions) {
       // Label bubble sits directly above its own input. It carries no `part`
       // attribute: [part="bubble-bot"] is reserved for the persistent bubbles
@@ -103,18 +135,192 @@ export class Renderer {
       const el = this.buildInput(q, options.values?.[q.id]);
       el.dataset['questionId'] = q.id;
       inputWrap.appendChild(el);
+
+      if (!firstLabel) {
+        firstLabel = label;
+        firstTitle = q.title;
+      }
+      hiddenUntilReady.push(el);
     }
 
     pageDiv.appendChild(inputWrap);
 
-    const submit = doc.createElement('button');
-    submit.className = 'car-btn-submit';
-    submit.setAttribute('part', 'submit-btn');
-    submit.textContent = 'Continue';
+    const submit = this.buildSubmitButton(options.showContinueIcon !== false);
     pageDiv.appendChild(submit);
+    hiddenUntilReady.push(submit);
 
     this.messageList.appendChild(pageDiv);
     this.inputArea = pageDiv;
+
+    const typingSpeed = this.prefersReducedMotion() ? 0 : (options.typingSpeed ?? 0);
+    const thinking = options.thinking && options.thinking.delay > 0 ? options.thinking : null;
+    const shouldAnimate = firstLabel !== null && (typingSpeed > 0 || thinking !== null);
+
+    if (!shouldAnimate || !firstLabel) {
+      options.onReady?.();
+      return;
+    }
+
+    // Keep the input and Continue button out of sight until the question has
+    // been "thought about" and "typed".
+    hiddenUntilReady.forEach((el) => {
+      el.hidden = true;
+    });
+    this.animateQuestion(firstLabel, firstTitle, typingSpeed, thinking, () => {
+      hiddenUntilReady.forEach((el) => {
+        el.hidden = false;
+      });
+      options.onReady?.();
+    });
+  }
+
+  /** Builds the Continue button: its label plus an icon the page can replace or hide. */
+  private buildSubmitButton(showIcon: boolean): HTMLButtonElement {
+    const doc = this.root.ownerDocument;
+    const submit = doc.createElement('button');
+    submit.className = 'car-btn-submit';
+    submit.setAttribute('part', 'submit-btn');
+
+    const labelEl = doc.createElement('span');
+    labelEl.className = 'car-btn-label';
+    labelEl.textContent = 'Continue';
+    submit.appendChild(labelEl);
+
+    if (showIcon) {
+      // Pages can swap the icon by putting an element in the `continue-icon`
+      // slot (for example an icon-font <i>), or restyle it through ::part(btn-icon).
+      // The arrow below is the fallback shown when nothing is slotted in.
+      const iconWrap = doc.createElement('span');
+      iconWrap.className = 'car-btn-icon';
+      iconWrap.setAttribute('part', 'btn-icon');
+      iconWrap.setAttribute('aria-hidden', 'true');
+
+      const slot = doc.createElement('slot');
+      slot.setAttribute('name', 'continue-icon');
+      slot.appendChild(this.buildDefaultContinueIcon());
+      iconWrap.appendChild(slot);
+      submit.appendChild(iconWrap);
+    }
+    return submit;
+  }
+
+  private buildDefaultContinueIcon(): SVGElement {
+    const doc = this.root.ownerDocument;
+    const svg = doc.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('viewBox', '0 0 16 16');
+    svg.setAttribute('width', '1em');
+    svg.setAttribute('height', '1em');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.setAttribute('stroke-width', '1.8');
+    svg.setAttribute('stroke-linecap', 'round');
+    svg.setAttribute('stroke-linejoin', 'round');
+    const path = doc.createElementNS(SVG_NS, 'path');
+    path.setAttribute('d', 'M3 8h9M8.5 4l4 4-4 4');
+    svg.appendChild(path);
+    return svg;
+  }
+
+  private prefersReducedMotion(): boolean {
+    const view = this.root.ownerDocument.defaultView;
+    return view?.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+  }
+
+  /**
+   * Plays the "thinking" then "typing" sequence on a question bubble, then calls
+   * `done`. Clicking the bubble skips straight to the finished question.
+   */
+  private animateQuestion(
+    bubble: HTMLElement,
+    text: string,
+    typingSpeed: number,
+    thinking: ThinkingConfig | null,
+    done: () => void,
+  ): void {
+    const view = this.root.ownerDocument.defaultView;
+    if (!view) {
+      done();
+      return;
+    }
+    const doc = this.root.ownerDocument;
+    let finished = false;
+
+    const finish = (): void => {
+      if (finished) return;
+      finished = true;
+      this.clearAnimationTimers();
+      bubble.classList.remove('car-bubble--thinking');
+      bubble.removeAttribute('aria-busy');
+      bubble.textContent = text;
+      done();
+    };
+
+    const startTyping = (): void => {
+      bubble.classList.remove('car-bubble--thinking');
+      if (typingSpeed <= 0 || text.length === 0) {
+        finish();
+        return;
+      }
+
+      // Screen readers get the whole question at once; the typed and untyped
+      // spans below are for sighted users. The untyped part is invisible but
+      // still takes up room, so the bubble does not grow as it types.
+      bubble.textContent = '';
+      const readable = doc.createElement('span');
+      readable.className = 'car-sr-only';
+      readable.textContent = text;
+      const visual = doc.createElement('span');
+      visual.setAttribute('aria-hidden', 'true');
+      const typed = doc.createElement('span');
+      const untyped = doc.createElement('span');
+      untyped.className = 'car-untyped';
+      untyped.textContent = text;
+      visual.append(typed, untyped);
+      bubble.append(readable, visual);
+
+      let count = 0;
+      const timerId = view.setInterval(() => {
+        count += 1;
+        typed.textContent = text.slice(0, count);
+        untyped.textContent = text.slice(count);
+        if (count >= text.length) finish();
+      }, typingSpeed);
+      this.animationTimers.add(timerId);
+    };
+
+    bubble.setAttribute('aria-busy', 'true');
+    bubble.addEventListener('click', finish, { once: true });
+
+    if (thinking) {
+      bubble.classList.add('car-bubble--thinking');
+      bubble.textContent = '';
+      if (thinking.text) {
+        bubble.textContent = thinking.text;
+      } else {
+        const dots = doc.createElement('span');
+        dots.className = 'car-dots';
+        dots.setAttribute('aria-hidden', 'true');
+        for (let i = 0; i < 3; i += 1) dots.appendChild(doc.createElement('span'));
+        bubble.appendChild(dots);
+      }
+      this.animationTimers.add(view.setTimeout(startTyping, thinking.delay));
+    } else {
+      startTyping();
+    }
+  }
+
+  private clearAnimationTimers(): void {
+    const view = this.root.ownerDocument.defaultView;
+    this.animationTimers.forEach((timerId) => {
+      view?.clearTimeout(timerId);
+      view?.clearInterval(timerId);
+    });
+    this.animationTimers.clear();
+  }
+
+  /** Stops any thinking / typing in progress, for example when the form is removed. */
+  cancelAnimations(): void {
+    this.clearAnimationTimers();
   }
 
   /**
@@ -225,6 +431,7 @@ export class Renderer {
 
   /** Remove the active input area (.car-page) from the chat. */
   clearInputArea(): void {
+    this.clearAnimationTimers();
     if (this.inputArea) {
       this.inputArea.remove();
       this.inputArea = null;

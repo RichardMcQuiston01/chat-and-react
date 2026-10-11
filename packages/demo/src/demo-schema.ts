@@ -13,6 +13,8 @@ export const demoSchema: ChatSchema = {
     autoComplete: false,
     allowEdit: true,
     autoHideQuestions: 5000,
+    typingSpeed: 20,
+    thinkingDelay: 700,
   },
   'x-chat-pages': [
     {
@@ -127,7 +129,9 @@ export const demoSchema: ChatSchema = {
           type: 'string',
           'x-chat-input': 'textarea',
           title: 'Any final comments or feedback for us?',
-          'x-chat-placeholder': 'Optional — press Continue to skip.',
+          'x-chat-placeholder': 'Optional. Enter continues, Shift+Enter adds a new line.',
+          // Per-question override: a longer, worded pause before this one.
+          'x-chat-thinking': { delay: 1300, text: 'Let me think of one last thing...' },
         },
       ],
       branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],

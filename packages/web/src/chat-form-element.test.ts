@@ -621,3 +621,393 @@ describe('<chat-form> editing answers', () => {
     expect(shadow.querySelectorAll('.car-edit')).toHaveLength(0);
   });
 });
+
+describe('<chat-form> attribute overrides', () => {
+  let el: HTMLElement;
+
+  afterEach(() => {
+    el?.remove();
+  });
+
+  function mountWith(schema: string, attributes: Record<string, string>): HTMLElement {
+    const element = document.createElement('chat-form');
+    element.setAttribute('schema', schema);
+    for (const [name, value] of Object.entries(attributes)) element.setAttribute(name, value);
+    document.body.appendChild(element);
+    return element;
+  }
+
+  it('user-resumable="false" stops chat-page-submit events', () => {
+    el = mountWith(twoPageSchema, { 'user-resumable': 'false' });
+    const shadow = getShadow(el);
+    const submits: CustomEvent[] = [];
+    el.addEventListener('chat-page-submit', (e) => submits.push(e as CustomEvent));
+
+    (shadow.querySelector('input[value="A"]') as HTMLInputElement).checked = true;
+    shadow.querySelector('[part="submit-btn"]')!.dispatchEvent(new Event('click'));
+    expect(submits).toHaveLength(0);
+  });
+
+  it('beats the schema when both set user-resumable', () => {
+    el = mountWith(schemaWithOptions(twoPageSchema, { userResumable: false }), {
+      'user-resumable': 'true',
+    });
+    const shadow = getShadow(el);
+    const submits: CustomEvent[] = [];
+    el.addEventListener('chat-page-submit', (e) => submits.push(e as CustomEvent));
+
+    (shadow.querySelector('input[value="A"]') as HTMLInputElement).checked = true;
+    shadow.querySelector('[part="submit-btn"]')!.dispatchEvent(new Event('click'));
+    expect(submits).toHaveLength(1);
+  });
+
+  it('auto-complete="false" turns autocomplete off on every input', () => {
+    el = mountWith(minimalSchema, { 'auto-complete': 'false' });
+    const input = getShadow(el).querySelector('input') as HTMLInputElement;
+    expect(input.getAttribute('autocomplete')).toBe('off');
+  });
+
+  it('leaves autocomplete alone by default', () => {
+    el = mount(minimalSchema);
+    const input = getShadow(el).querySelector('input') as HTMLInputElement;
+    expect(input.getAttribute('autocomplete')).toBeNull();
+  });
+
+  it('local-storage="true" saves what is typed', () => {
+    el = mountWith(minimalSchema, { 'local-storage': 'true' });
+    const input = getShadow(el).querySelector('input') as HTMLInputElement;
+    const before = window.localStorage.length;
+    input.value = 'typed';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(window.localStorage.length).toBe(before + 1);
+  });
+
+  it('local-storage="false" saves nothing while typing', () => {
+    el = mountWith(minimalSchema, { 'local-storage': 'false' });
+    const input = getShadow(el).querySelector('input') as HTMLInputElement;
+    const before = window.localStorage.length;
+    input.value = 'typed';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(window.localStorage.length).toBe(before);
+  });
+});
+
+describe('<chat-form> Enter in a textarea', () => {
+  let el: HTMLElement;
+
+  afterEach(() => {
+    el?.remove();
+  });
+
+  const textareaSchema = JSON.stringify({
+    'x-chat-version': '1',
+    'x-chat-pages': [{
+      id: 'p1', title: 'P1',
+      questions: [{ id: 'notes', type: 'string', 'x-chat-input': 'textarea', title: 'Notes?' }],
+      branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
+    }],
+  });
+
+  it('continues on Enter', () => {
+    el = mount(textareaSchema);
+    const shadow = getShadow(el);
+    const completed: CustomEvent[] = [];
+    el.addEventListener('chat-form-complete', (e) => completed.push(e as CustomEvent));
+    const box = shadow.querySelector('textarea') as HTMLTextAreaElement;
+    box.value = 'Great';
+
+    const event = key(box, 'Enter');
+    expect(event.defaultPrevented).toBe(true);
+    expect(completed[0].detail.allAnswers).toEqual({ notes: 'Great' });
+  });
+
+  it('keeps Shift+Enter for a new line', () => {
+    el = mount(textareaSchema);
+    const shadow = getShadow(el);
+    const completed: CustomEvent[] = [];
+    el.addEventListener('chat-form-complete', (e) => completed.push(e as CustomEvent));
+    const box = shadow.querySelector('textarea') as HTMLTextAreaElement;
+
+    const event = new KeyboardEvent('keydown', {
+      key: 'Enter', shiftKey: true, bubbles: true, cancelable: true,
+    });
+    box.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+    expect(completed).toHaveLength(0);
+  });
+
+  it('ignores Enter while an input method is composing text', () => {
+    el = mount(textareaSchema);
+    const shadow = getShadow(el);
+    const completed: CustomEvent[] = [];
+    el.addEventListener('chat-form-complete', (e) => completed.push(e as CustomEvent));
+    const box = shadow.querySelector('textarea') as HTMLTextAreaElement;
+
+    box.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', isComposing: true, bubbles: true, cancelable: true }),
+    );
+    expect(completed).toHaveLength(0);
+  });
+});
+
+describe('<chat-form> Continue icon', () => {
+  let el: HTMLElement;
+
+  afterEach(() => {
+    el?.remove();
+  });
+
+  it('shows a default icon inside a slot the page can fill', () => {
+    el = mount(minimalSchema);
+    const button = getShadow(el).querySelector('[part="submit-btn"]') as HTMLElement;
+    const slot = button.querySelector('slot[name="continue-icon"]');
+    expect(slot).not.toBeNull();
+    expect(slot?.querySelector('svg')).not.toBeNull();
+    expect(button.querySelector('[part="btn-icon"]')).not.toBeNull();
+    expect(button.textContent).toBe('Continue');
+  });
+
+  it('leaves the icon out when showContinueIcon is false', () => {
+    el = mount(schemaWithOptions(minimalSchema, { showContinueIcon: false }));
+    const button = getShadow(el).querySelector('[part="submit-btn"]') as HTMLElement;
+    expect(button.querySelector('slot')).toBeNull();
+    expect(button.querySelector('svg')).toBeNull();
+  });
+
+  it('can be switched off with the show-continue-icon attribute', () => {
+    el = document.createElement('chat-form');
+    el.setAttribute('schema', minimalSchema);
+    el.setAttribute('show-continue-icon', 'false');
+    document.body.appendChild(el);
+    const button = getShadow(el).querySelector('[part="submit-btn"]') as HTMLElement;
+    expect(button.querySelector('[part="btn-icon"]')).toBeNull();
+  });
+});
+
+describe('<chat-form> typing and thinking', () => {
+  let el: HTMLElement;
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    el?.remove();
+  });
+
+  /** The bubble holding the question (not the page title). */
+  function label(shadow: ShadowRoot): HTMLElement {
+    return shadow.querySelector('.car-page .car-input-wrap > .car-bubble') as HTMLElement;
+  }
+
+  function typedText(shadow: ShadowRoot): string {
+    return label(shadow).querySelector('span[aria-hidden="true"] > span:first-child')?.textContent ?? '';
+  }
+
+  function inputHidden(shadow: ShadowRoot): boolean {
+    return (shadow.querySelector('.car-page input') as HTMLInputElement).hidden;
+  }
+
+  it('shows the question straight away by default', () => {
+    el = mount(minimalSchema);
+    const shadow = getShadow(el);
+    expect(label(shadow).textContent).toBe('What is your name?');
+    expect(inputHidden(shadow)).toBe(false);
+  });
+
+  it('types the question a character at a time, then shows the input', () => {
+    vi.useFakeTimers();
+    el = mount(schemaWithOptions(minimalSchema, { typingSpeed: 50 }));
+    const shadow = getShadow(el);
+
+    expect(inputHidden(shadow)).toBe(true);
+    expect(typedText(shadow)).toBe('');
+
+    vi.advanceTimersByTime(150);
+    expect(typedText(shadow)).toBe('Wha');
+    expect(inputHidden(shadow)).toBe(true);
+
+    vi.advanceTimersByTime(50 * 'What is your name?'.length);
+    expect(label(shadow).textContent).toBe('What is your name?');
+    expect(inputHidden(shadow)).toBe(false);
+  });
+
+  it('keeps the whole question available to screen readers while it types', () => {
+    vi.useFakeTimers();
+    el = mount(schemaWithOptions(minimalSchema, { typingSpeed: 50 }));
+    const shadow = getShadow(el);
+    vi.advanceTimersByTime(100);
+    expect(label(shadow).querySelector('.car-sr-only')?.textContent).toBe('What is your name?');
+  });
+
+  it('finishes at once when the question is clicked', () => {
+    vi.useFakeTimers();
+    el = mount(schemaWithOptions(minimalSchema, { typingSpeed: 50 }));
+    const shadow = getShadow(el);
+    vi.advanceTimersByTime(100);
+
+    label(shadow).click();
+    expect(label(shadow).textContent).toBe('What is your name?');
+    expect(inputHidden(shadow)).toBe(false);
+  });
+
+  it('shows the question straight away when the user prefers reduced motion', () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('matchMedia', () => ({ matches: true }));
+    Object.defineProperty(window, 'matchMedia', { value: () => ({ matches: true }), configurable: true });
+    el = mount(schemaWithOptions(minimalSchema, { typingSpeed: 50 }));
+    const shadow = getShadow(el);
+    expect(label(shadow).textContent).toBe('What is your name?');
+    expect(inputHidden(shadow)).toBe(false);
+    Reflect.deleteProperty(window, 'matchMedia');
+  });
+
+  it('shows animated dots for the thinking delay, then the question', () => {
+    vi.useFakeTimers();
+    el = mount(schemaWithOptions(minimalSchema, { thinkingDelay: 800 }));
+    const shadow = getShadow(el);
+
+    expect(label(shadow).classList.contains('car-bubble--thinking')).toBe(true);
+    expect(label(shadow).querySelectorAll('.car-dots span')).toHaveLength(3);
+    expect(inputHidden(shadow)).toBe(true);
+
+    vi.advanceTimersByTime(799);
+    expect(label(shadow).classList.contains('car-bubble--thinking')).toBe(true);
+
+    vi.advanceTimersByTime(1);
+    expect(label(shadow).classList.contains('car-bubble--thinking')).toBe(false);
+    expect(label(shadow).textContent).toBe('What is your name?');
+    expect(inputHidden(shadow)).toBe(false);
+  });
+
+  it('shows thinkingText instead of dots when it is set', () => {
+    vi.useFakeTimers();
+    el = mount(schemaWithOptions(minimalSchema, { thinkingDelay: 500, thinkingText: '...' }));
+    const shadow = getShadow(el);
+    expect(label(shadow).textContent).toBe('...');
+    expect(label(shadow).querySelector('.car-dots')).toBeNull();
+  });
+
+  it('thinks first and then types', () => {
+    vi.useFakeTimers();
+    el = mount(schemaWithOptions(minimalSchema, { thinkingDelay: 400, typingSpeed: 20 }));
+    const shadow = getShadow(el);
+
+    vi.advanceTimersByTime(400);
+    expect(label(shadow).classList.contains('car-bubble--thinking')).toBe(false);
+    expect(inputHidden(shadow)).toBe(true);
+
+    vi.advanceTimersByTime(20 * 'What is your name?'.length);
+    expect(label(shadow).textContent).toBe('What is your name?');
+    expect(inputHidden(shadow)).toBe(false);
+  });
+
+  it("lets a question's x-chat-thinking override the options", () => {
+    vi.useFakeTimers();
+    const schema = JSON.stringify({
+      'x-chat-version': '1',
+      'x-chat-options': { thinkingDelay: 5000 },
+      'x-chat-pages': [{
+        id: 'p1', title: 'P1',
+        questions: [{
+          id: 'q1', type: 'string', 'x-chat-input': 'text', title: 'Quick one?', 'x-chat-thinking': 100,
+        }],
+        branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
+      }],
+    });
+    el = mount(schema);
+    const shadow = getShadow(el);
+    vi.advanceTimersByTime(100);
+    expect(label(shadow).textContent).toBe('Quick one?');
+  });
+
+  it('turns thinking off for one question with x-chat-thinking: 0', () => {
+    const schema = JSON.stringify({
+      'x-chat-version': '1',
+      'x-chat-options': { thinkingDelay: 5000 },
+      'x-chat-pages': [{
+        id: 'p1', title: 'P1',
+        questions: [{
+          id: 'q1', type: 'string', 'x-chat-input': 'text', title: 'Right away?', 'x-chat-thinking': 0,
+        }],
+        branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
+      }],
+    });
+    el = mount(schema);
+    const shadow = getShadow(el);
+    expect(label(shadow).textContent).toBe('Right away?');
+    expect(inputHidden(shadow)).toBe(false);
+  });
+
+  it('accepts a per-question delay and text', () => {
+    vi.useFakeTimers();
+    const schema = JSON.stringify({
+      'x-chat-version': '1',
+      'x-chat-pages': [{
+        id: 'p1', title: 'P1',
+        questions: [{
+          id: 'q1', type: 'string', 'x-chat-input': 'text', title: 'Hmm?',
+          'x-chat-thinking': { delay: 300, text: 'Let me think...' },
+        }],
+        branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
+      }],
+    });
+    el = mount(schema);
+    const shadow = getShadow(el);
+    expect(label(shadow).textContent).toBe('Let me think...');
+    vi.advanceTimersByTime(300);
+    expect(label(shadow).textContent).toBe('Hmm?');
+  });
+
+  it('thinks again before each new question, but not when an answer is edited', () => {
+    vi.useFakeTimers();
+    el = mount(
+      schemaWithOptions(
+        JSON.stringify({
+          'x-chat-version': '1',
+          'x-chat-pages': [{
+            id: 'p1', title: 'P1',
+            questions: [
+              { id: 'a', type: 'string', 'x-chat-input': 'text', title: 'First?' },
+              { id: 'b', type: 'string', 'x-chat-input': 'text', title: 'Second?' },
+            ],
+            branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
+          }],
+        }),
+        { thinkingDelay: 200, allowEdit: true },
+      ),
+    );
+    const shadow = getShadow(el);
+    vi.advanceTimersByTime(200);
+
+    (shadow.querySelector('input') as HTMLInputElement).value = 'one';
+    shadow.querySelector('[part="submit-btn"]')!.dispatchEvent(new Event('click'));
+    expect(label(shadow).classList.contains('car-bubble--thinking')).toBe(true);
+    vi.advanceTimersByTime(200);
+    expect(label(shadow).textContent).toBe('Second?');
+
+    (shadow.querySelector('.car-edit') as HTMLElement).click();
+    expect(label(shadow).classList.contains('car-bubble--thinking')).toBe(false);
+    expect(label(shadow).textContent).toBe('First?');
+    expect(inputHidden(shadow)).toBe(false);
+  });
+
+  it('lets the typing-speed and thinking-delay attributes override the schema', () => {
+    vi.useFakeTimers();
+    el = document.createElement('chat-form');
+    el.setAttribute('schema', schemaWithOptions(minimalSchema, { thinkingDelay: 60_000 }));
+    el.setAttribute('thinking-delay', '100');
+    el.setAttribute('typing-speed', '0');
+    document.body.appendChild(el);
+    const shadow = getShadow(el);
+    vi.advanceTimersByTime(100);
+    expect(label(shadow).textContent).toBe('What is your name?');
+  });
+
+  it('stops animating when the form is removed', () => {
+    vi.useFakeTimers();
+    el = mount(schemaWithOptions(minimalSchema, { typingSpeed: 50 }));
+    const shadow = getShadow(el);
+    el.remove();
+    expect(() => vi.advanceTimersByTime(5000)).not.toThrow();
+    expect(shadow.querySelector('.car-page')).not.toBeNull();
+  });
+});

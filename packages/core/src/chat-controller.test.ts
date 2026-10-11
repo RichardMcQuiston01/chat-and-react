@@ -77,6 +77,10 @@ describe('ChatController', () => {
       autoComplete: true,
       allowEdit: false,
       autoHideQuestions: 0,
+      typingSpeed: 0,
+      thinkingDelay: 0,
+      thinkingText: '',
+      showContinueIcon: true,
     });
   });
 
@@ -388,5 +392,29 @@ describe('ChatController — editing earlier answers', () => {
 
     c.submitPage({ name: 'Ada L.' });
     expect(c.getCurrentPage()?.id).toBe('p2');
+  });
+
+  it('lets option overrides win over the schema, and the schema win over defaults', () => {
+    const c = makeController(
+      { ...singlePageSchema, 'x-chat-options': { userResumable: true, allowEdit: true, typingSpeed: 40 } },
+      { options: { userResumable: false, thinkingDelay: 700, typingSpeed: undefined } },
+    );
+    c.start();
+    expect(c.getOptions()).toMatchObject({
+      userResumable: false, // override beats schema
+      allowEdit: true, // schema beats default
+      typingSpeed: 40, // an undefined override does not hide the schema value
+      thinkingDelay: 700, // override beats default
+      localStorage: true, // untouched default
+    });
+  });
+
+  it('does not emit page:submit when userResumable is overridden to false', () => {
+    const c = makeController(branchingSchema, { options: { userResumable: false } });
+    c.start();
+    const listener = vi.fn();
+    c.on('page:submit', listener);
+    c.submitPage({ choice: 'A' });
+    expect(listener).not.toHaveBeenCalled();
   });
 });

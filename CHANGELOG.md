@@ -10,6 +10,11 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `typingSpeed` option (attribute `typing-speed`): types each question onto the screen, in milliseconds per character. `0` shows it at once. Click the question to skip. Screen readers get the full text immediately, and reduced-motion users get no animation
+- `thinkingDelay` and `thinkingText` options (attributes `thinking-delay`, `thinking-text`): a "thinking" bubble with animated dots (or your text) before each question, and `x-chat-thinking` on a question to override it for that question
+- Continue button icon: a default arrow in a `continue-icon` slot so pages can supply their own icon-font icon, a `btn-icon` part for styling, and a `showContinueIcon` option (attribute `show-continue-icon`) to hide it
+- `ChatControllerConfig.options`: option values that win over the schema, used for element attributes
+- Element attributes `user-resumable`, `local-storage` and `auto-complete`, as the docs already described
 - Radio and checkbox choices show a number (1-9). Pressing the number picks the radio choice, or ticks / unticks the checkbox
 - `allowEdit` option (attribute `allow-edit`): an Edit icon on each answer lets users change it. An earlier page can be re-opened; it is submitted again with `edited: true`, and if the new answer changes the route, the pages that followed are dropped
 - `autoHideQuestions` option (attribute `auto-hide-questions`): hides each answered question bubble after a delay, in milliseconds. Answers stay visible
