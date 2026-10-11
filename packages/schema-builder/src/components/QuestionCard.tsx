@@ -1,5 +1,6 @@
 import type { ChatQuestion, ChatInputType } from '@richardmcquiston01/chat-and-react-core';
 import type { BuilderAction } from '../reducer.js';
+import { buildThinking, readThinking } from '../schema-helpers.js';
 
 const INPUT_TYPES: ChatInputType[] = ['text', 'textarea', 'dropdown', 'radio', 'checkbox'];
 const OPTION_TYPES: ChatInputType[] = ['dropdown', 'radio', 'checkbox'];
@@ -70,6 +71,12 @@ export function QuestionCard({
   function removeOption(i: number) { setOptions(optionValues.filter((_, idx) => idx !== i)); }
   function updateOption(i: number, val: string) {
     setOptions(optionValues.map((v, idx) => (idx === i ? val : v)));
+  }
+
+  const thinking = readThinking(question);
+
+  function updateThinking(delaySeconds: string, text: string) {
+    update({ 'x-chat-thinking': buildThinking(delaySeconds, text) });
   }
 
   const isOptionType = OPTION_TYPES.includes(question['x-chat-input']);
@@ -163,6 +170,27 @@ export function QuestionCard({
           <button className="btn btn-ghost btn-sm" onClick={addOption}>+ Add option</button>
         </div>
       )}
+
+      <div className="field">
+        <label className="field-label">Thinking before this question</label>
+        <input
+          className="field-input field-input--sm"
+          type="number"
+          min={0}
+          step={0.1}
+          value={thinking.delaySeconds}
+          onChange={(e) => updateThinking(e.target.value, thinking.text)}
+          placeholder="default"
+          aria-label="Seconds to show the thinking bubble before this question. Leave empty to use the form's setting; 0 turns it off for this question"
+        />
+        <input
+          className="field-input"
+          value={thinking.text}
+          onChange={(e) => updateThinking(thinking.delaySeconds, e.target.value)}
+          placeholder="Thinking text (empty = animated dots)"
+          aria-label="Text for the thinking bubble. Leave empty for animated dots"
+        />
+      </div>
 
       <div className="field">
         <label className="field-label">Condition</label>

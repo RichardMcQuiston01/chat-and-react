@@ -1141,3 +1141,117 @@ describe('<chat-form> hiding answered questions and answers', () => {
     expect(getShadow(el).querySelector('[part="message-list"]')?.classList.contains('car-messages')).toBe(true);
   });
 });
+
+describe('<chat-form> Edit icon slot', () => {
+  let el: HTMLElement;
+
+  afterEach(() => {
+    el?.remove();
+  });
+
+  const editablePage = schemaWithOptions(
+    JSON.stringify({
+      'x-chat-version': '1',
+      'x-chat-pages': [{
+        id: 'p1', title: 'P1',
+        questions: [
+          { id: 'a', type: 'string', 'x-chat-input': 'text', title: 'First?' },
+          { id: 'b', type: 'string', 'x-chat-input': 'text', title: 'Second?' },
+          { id: 'c', type: 'string', 'x-chat-input': 'text', title: 'Third?' },
+        ],
+        branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
+      }],
+    }),
+    { allowEdit: true },
+  );
+
+  function mountWithIcon(iconHtml: string): HTMLElement {
+    const element = document.createElement('chat-form');
+    element.setAttribute('schema', editablePage);
+    element.insertAdjacentHTML('beforeend', iconHtml);
+    document.body.appendChild(element);
+    return element;
+  }
+
+  function answer(shadow: ShadowRoot, value: string): void {
+    (shadow.querySelector('input') as HTMLInputElement).value = value;
+    shadow.querySelector('[part="submit-btn"]')!.dispatchEvent(new Event('click'));
+  }
+
+  /** Direct children of the element that have the given attribute. */
+  function childrenWith(element: HTMLElement, attribute: string): Element[] {
+    return Array.from(element.children).filter((child) => child.hasAttribute(attribute));
+  }
+
+  function slottedText(button: Element): string | undefined {
+    const slot = button.querySelector('slot') as HTMLSlotElement;
+    return slot.assignedNodes().map((node) => node.textContent).join('');
+  }
+
+  it('shows a pencil when the page supplies no icon', () => {
+    el = mount(editablePage);
+    const shadow = getShadow(el);
+    answer(shadow, 'one');
+    expect(shadow.querySelector('.car-edit')?.textContent).toBe('✎');
+  });
+
+  it('gives every Edit button its own copy of the page icon', () => {
+    el = mountWithIcon('<i slot="edit-icon" class="fa-pen" id="proto">E</i>');
+    const shadow = getShadow(el);
+    answer(shadow, 'one');
+    answer(shadow, 'two');
+
+    const buttons = Array.from(shadow.querySelectorAll('.car-edit'));
+    expect(buttons).toHaveLength(2);
+    expect(buttons.map(slottedText)).toEqual(['E', 'E']);
+
+    const slotNames = buttons.map((b) => b.querySelector('slot')!.getAttribute('name'));
+    expect(new Set(slotNames).size).toBe(2);
+  });
+
+  it('keeps the page icon in the page, so its own styles still apply', () => {
+    el = mountWithIcon('<i slot="edit-icon" class="fa-pen">E</i>');
+    answer(getShadow(el), 'one');
+    const copies = childrenWith(el, 'data-car-edit-icon');
+    expect(copies).toHaveLength(1);
+    expect(copies[0].classList.contains('fa-pen')).toBe(true);
+    expect(copies[0].hasAttribute('id')).toBe(false);
+  });
+
+  it('copies the contents of a <template> icon', () => {
+    el = mountWithIcon('<template slot="edit-icon"><b>T</b></template>');
+    const shadow = getShadow(el);
+    answer(shadow, 'one');
+    expect(slottedText(shadow.querySelector('.car-edit') as Element)).toBe('T');
+  });
+
+  it('does not show the original icon element or count it as a copy', () => {
+    el = mountWithIcon('<i slot="edit-icon">E</i>');
+    const shadow = getShadow(el);
+    answer(shadow, 'one');
+    answer(shadow, 'two');
+    // The original stays put and is never assigned to a slot.
+    const original = Array.from(el.children).find(
+      (child) => child.getAttribute('slot') === 'edit-icon',
+    ) as HTMLElement;
+    expect(original).not.toBeNull();
+    expect(shadow.querySelector('slot[name="edit-icon"]')).toBeNull();
+    const assigned = Array.from(shadow.querySelectorAll('slot')).flatMap((slot) =>
+      (slot as HTMLSlotElement).assignedNodes(),
+    );
+    expect(assigned).not.toContain(original);
+    expect(childrenWith(el, 'data-car-edit-icon')).toHaveLength(2);
+  });
+
+  it('removes the copies when the Edit buttons go away at the end of the form', () => {
+    el = mountWithIcon('<i slot="edit-icon">E</i>');
+    const shadow = getShadow(el);
+    answer(shadow, 'one');
+    answer(shadow, 'two');
+    expect(childrenWith(el, 'data-car-edit-icon')).toHaveLength(2);
+
+    answer(shadow, 'three');
+    expect(childrenWith(el, 'data-car-edit-icon')).toHaveLength(0);
+    expect(childrenWith(el, 'slot')).toHaveLength(1);
+  });
+});

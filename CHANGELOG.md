@@ -22,6 +22,9 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - `autoHideQuestions` option (attribute `auto-hide-questions`): hides each answered question bubble after a delay, in milliseconds. Answers stay visible
 - `ChatController.getRoute()`, `getAnswers()` and `reopenPage()`, and `submitPage()` now returns a `SubmitOutcome`
 - Schema Builder: toggle for `allowEdit` and a field for `autoHideQuestions`
+- Edit icon: a pencil in an `edit-icon` slot, so pages can supply their own icon-font icon, and an `edit-icon` part for styling
+- Schema Builder: per-question thinking delay and text
+- Demo: a settings widget (gear icon) that opens a window for changing the options. Settings are saved to `localStorage`
 - Demo: turned on `allowEdit` and `autoHideQuestions` (5 seconds)
 
 ### Changed

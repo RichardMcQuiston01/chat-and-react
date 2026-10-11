@@ -130,6 +130,11 @@ export function getStyles(): string {
   transform-origin: right center;
 }
 
+.car-edit-icon {
+  display: inline-flex;
+  align-items: center;
+}
+
 .car-bubble--user .car-edit {
   margin-left: 10px;
   padding: 0 4px;

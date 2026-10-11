@@ -51,6 +51,7 @@ export class Renderer {
   private editable = false;
   private editHandler: EditHandler | null = null;
   private animationTimers = new Set<number>();
+  private editIconCount = 0;
 
   constructor(root: ShadowRoot) {
     this.root = root;
@@ -89,6 +90,68 @@ export class Renderer {
   removeEditButtons(): void {
     this.editable = false;
     this.messageList.querySelectorAll('.car-edit').forEach((button) => button.remove());
+    this.pruneEditIconCopies();
+  }
+
+  /**
+   * Builds the icon inside an Edit button. Pages can supply their own by putting
+   * an element (or a <template>) with `slot="edit-icon"` inside <chat-form>. Every
+   * Edit button needs its own slot, because one slot can only show one thing, so
+   * each button gets a uniquely named slot and a copy of the page's icon, placed
+   * in the page (not the shadow DOM) so icon fonts and the page's CSS still apply.
+   * The pencil is the fallback when the page supplies nothing.
+   */
+  private buildEditIcon(): HTMLElement {
+    const doc = this.root.ownerDocument;
+    const icon = doc.createElement('span');
+    icon.className = 'car-edit-icon';
+    icon.setAttribute('part', 'edit-icon');
+    icon.setAttribute('aria-hidden', 'true');
+
+    const slotName = `edit-icon-${this.editIconCount++}`;
+    const slot = doc.createElement('slot');
+    slot.setAttribute('name', slotName);
+    slot.appendChild(doc.createTextNode('\u270E'));
+    icon.appendChild(slot);
+
+    this.addEditIconCopy(slotName);
+    return icon;
+  }
+
+  /** Puts a copy of the page's `edit-icon` element in the page, assigned to the given slot. */
+  private addEditIconCopy(slotName: string): void {
+    const host = this.root.host;
+    const source = Array.from(host.children).find(
+      (child) => child.getAttribute('slot') === 'edit-icon',
+    );
+    if (!source) return;
+
+    const doc = this.root.ownerDocument;
+    let copy: HTMLElement;
+    if (source instanceof HTMLTemplateElement) {
+      copy = doc.createElement('span');
+      copy.appendChild(source.content.cloneNode(true));
+    } else {
+      copy = source.cloneNode(true) as HTMLElement;
+      copy.removeAttribute('id');
+    }
+    copy.setAttribute('slot', slotName);
+    copy.setAttribute('data-car-edit-icon', '');
+    host.appendChild(copy);
+  }
+
+  /** Removes the page's icon copies whose Edit button is gone. */
+  private pruneEditIconCopies(): void {
+    const host = this.root.host;
+    Array.from(host.children)
+      .filter((child) => child.hasAttribute('data-car-edit-icon'))
+      .forEach((copy) => {
+        const slotName = copy.getAttribute('slot') ?? '';
+        const stillUsed = Array.from(this.root.querySelectorAll('slot')).some(
+          (slot) => slot.getAttribute('name') === slotName,
+        );
+        if (!stillUsed) copy.remove();
+      });
   }
 
   /**
@@ -398,7 +461,7 @@ export class Renderer {
       editButton.setAttribute('part', 'edit-btn');
       editButton.setAttribute('aria-label', `Edit your answer to: ${questionTitle}`);
       editButton.title = 'Edit answer';
-      editButton.textContent = '\u270E';
+      editButton.appendChild(this.buildEditIcon());
       answerBubble.appendChild(editButton);
     }
 
@@ -411,6 +474,7 @@ export class Renderer {
     this.messageList.querySelectorAll<HTMLElement>('[data-route-index]').forEach((bubble) => {
       if (Number(bubble.dataset['routeIndex']) > routeIndex) bubble.remove();
     });
+    this.pruneEditIconCopies();
   }
 
   /**
