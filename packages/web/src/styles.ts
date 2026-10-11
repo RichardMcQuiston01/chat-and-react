@@ -68,6 +68,48 @@ export function getStyles(): string {
   gap: 8px;
 }
 
+.car-option-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.4em;
+  height: 1.4em;
+  padding: 0 4px;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  line-height: 1;
+  color: #666666;
+  box-sizing: border-box;
+}
+
+.car-bubble--fading {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.car-bubble--user .car-edit {
+  margin-left: 10px;
+  padding: 0 4px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.car-bubble--user .car-edit:hover,
+.car-bubble--user .car-edit:focus-visible {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .car-bubble--fading {
+    transition: none;
+  }
+}
+
 .car-input:focus {
   border-color: var(--car-accent);
 }

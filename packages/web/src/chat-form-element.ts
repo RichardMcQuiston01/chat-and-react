@@ -76,6 +76,18 @@ class InstanceStorage {
  * library. Consumes a JSON schema attribute and drives the full conversation flow
  * inside a Shadow DOM using the chat bubble aesthetic.
  */
+/** Shown in the chat history when a question was left blank. */
+const NO_ANSWER_TEXT = '(no answer)';
+
+/** The in-progress page, set aside while the user edits an earlier one. */
+interface SuspendedPage {
+  pageQuestions: ChatQuestion[];
+  questionIndex: number;
+  pageAnswers: AnswerMap;
+  pageTitleLogged: boolean;
+  pendingRouteIndex: number;
+}
+
 export class ChatFormElement extends HTMLElement {
   private controller: ChatController | null = null;
   private session: SessionManager | null = null;
@@ -88,6 +100,18 @@ export class ChatFormElement extends HTMLElement {
   private pageQuestions: ChatQuestion[] = [];
   private questionIndex = 0;
   private pageAnswers: AnswerMap = {};
+  private pageTitleLogged = false;
+
+  /** Position the page being asked will take in the controller's route once submitted. */
+  private pendingRouteIndex = 0;
+  /** Route index of an earlier page being edited, or null when answering normally. */
+  private editingRouteIndex: number | null = null;
+  /** The page the user was on, saved while they edit an earlier page. */
+  private suspendedPage: SuspendedPage | null = null;
+
+  private allowEdit = false;
+  private autoHideMs = 0;
+  private readonly hideTimers = new Set<number>();
 
   connectedCallback(): void {
     const shadow = this.attachShadow({ mode: 'open' });
@@ -102,6 +126,8 @@ export class ChatFormElement extends HTMLElement {
   }
 
   disconnectedCallback(): void {
+    this.hideTimers.forEach((timerId) => window.clearTimeout(timerId));
+    this.hideTimers.clear();
     this.controller?.destroy();
     this.controller = null;
     this.session = null;
@@ -148,6 +174,8 @@ export class ChatFormElement extends HTMLElement {
     });
 
     this.controller.on('form:complete', (e: ChatEvent) => {
+      // Answers are final once the form is complete.
+      this.renderer?.removeEditButtons();
       this.dispatchEvent(
         new CustomEvent('chat-form-complete', { detail: e, bubbles: true }),
       );
@@ -162,7 +190,27 @@ export class ChatFormElement extends HTMLElement {
       return;
     }
 
+    this.resolveOptions();
+    this.renderer?.setEditable(this.allowEdit, (routeIndex, questionId) =>
+      this.handleEdit(routeIndex, questionId),
+    );
     this.renderCurrentPage();
+  }
+
+  /**
+   * Reads the allowEdit and autoHideQuestions options. Element attributes
+   * (`allow-edit`, `auto-hide-questions`) take precedence over the schema.
+   */
+  private resolveOptions(): void {
+    if (!this.controller) return;
+    const options = this.controller.getOptions();
+
+    const allowEditAttr = this.getAttribute('allow-edit');
+    this.allowEdit = allowEditAttr === null ? options.allowEdit : allowEditAttr !== 'false';
+
+    const hideAttr = this.getAttribute('auto-hide-questions');
+    const hideFromAttr = hideAttr === null ? NaN : Number(hideAttr);
+    this.autoHideMs = Number.isFinite(hideFromAttr) ? hideFromAttr : options.autoHideQuestions;
   }
 
   /**
@@ -177,7 +225,14 @@ export class ChatFormElement extends HTMLElement {
     this.pageQuestions = this.controller.getVisibleQuestions();
     this.questionIndex = 0;
     this.pageAnswers = {};
+    this.pageTitleLogged = false;
+    this.pendingRouteIndex = this.controller.getRoute().length;
     this.renderQuestionStep(autofocus);
+  }
+
+  /** Route index the answers on screen belong to: the edited page, or the page being asked. */
+  private get activeRouteIndex(): number {
+    return this.editingRouteIndex ?? this.pendingRouteIndex;
   }
 
   /** The question being asked now, as a list (empty for a page with no questions). */
@@ -194,6 +249,7 @@ export class ChatFormElement extends HTMLElement {
 
     this.renderer.renderPage(page, this.getStepQuestions(), {
       showTitle: this.questionIndex === 0,
+      values: this.pageAnswers,
     });
 
     const inputArea = this.renderer.getInputArea();
@@ -205,13 +261,28 @@ export class ChatFormElement extends HTMLElement {
       btn.addEventListener('click', () => this.handleContinue());
     }
 
-    // Enter in a single-line input acts like Continue. Textareas keep Enter
-    // for new lines, and buttons already act on Enter.
+    // Keyboard shortcuts. Enter in a single-line input or dropdown acts like Continue, and
+    // the number keys pick the numbered radio / checkbox options. Textareas keep
+    // Enter for new lines, and buttons already act on Enter.
     inputArea.addEventListener('keydown', (event: Event) => {
       const keyEvent = event as KeyboardEvent;
-      if (keyEvent.key !== 'Enter' || !(keyEvent.target instanceof HTMLInputElement)) return;
-      keyEvent.preventDefault();
-      this.handleContinue();
+      const target = keyEvent.target;
+
+      if (
+        keyEvent.key === 'Enter' &&
+        (target instanceof HTMLInputElement || target instanceof HTMLSelectElement)
+      ) {
+        keyEvent.preventDefault();
+        this.handleContinue();
+        return;
+      }
+
+      const hasModifier = keyEvent.ctrlKey || keyEvent.metaKey || keyEvent.altKey;
+      if (/^[1-9]$/.test(keyEvent.key) && !hasModifier && !this.isTextEntry(target)) {
+        if (this.selectOptionByNumber(inputArea, Number(keyEvent.key))) {
+          keyEvent.preventDefault();
+        }
+      }
     });
 
     // Apply autocomplete="off" when the option is disabled.
@@ -248,6 +319,33 @@ export class ChatFormElement extends HTMLElement {
     }
   }
 
+  /** True for controls where typing a character should be left alone. */
+  private isTextEntry(target: EventTarget | null): boolean {
+    if (target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return true;
+    return (
+      target instanceof HTMLInputElement &&
+      target.type !== 'radio' &&
+      target.type !== 'checkbox'
+    );
+  }
+
+  /**
+   * Picks the nth radio option, or toggles the nth checkbox, on the question on
+   * screen. Returns false when there is no such option.
+   */
+  private selectOptionByNumber(inputArea: HTMLElement, number: number): boolean {
+    const options = Array.from(
+      inputArea.querySelectorAll<HTMLInputElement>('input[type="radio"], input[type="checkbox"]'),
+    );
+    const option = options[number - 1];
+    if (!option) return false;
+
+    option.checked = option.type === 'radio' ? true : !option.checked;
+    option.focus();
+    option.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  }
+
   /**
    * Records the answer to the current question, then either asks the next
    * question of the page or, after the last one, submits the whole page.
@@ -264,22 +362,25 @@ export class ChatFormElement extends HTMLElement {
     Object.assign(this.pageAnswers, stepAnswers);
 
     const hasMoreQuestions = this.questionIndex + 1 < this.pageQuestions.length;
+    const routeIndex = this.activeRouteIndex;
 
     // Keep the page title in the history once its first question is answered,
     // because the title bubble is only shown on the first step.
-    if (hasMoreQuestions && this.questionIndex === 0 && page?.title) {
-      this.renderer.appendBotBubble(page.title);
+    if (hasMoreQuestions && !this.pageTitleLogged && this.editingRouteIndex === null && page?.title) {
+      const titleBubble = this.renderer.appendBotBubble(page.title, routeIndex);
+      this.scheduleHide(titleBubble);
+      this.pageTitleLogged = true;
     }
 
     // Move the answered question into the chat history as a question / answer
-    // pair. The label inside the active page is removed with the page.
+    // pair, or update the answer in place if it was already recorded (an edit).
     for (const q of stepQuestions) {
       const value = stepAnswers[q.id];
-      if (value !== undefined) {
-        const display = Array.isArray(value) ? value.join(', ') : value;
-        this.renderer.appendBotBubble(q.title);
-        this.renderer.appendUserBubble(display);
-      }
+      if (value === undefined) continue;
+      const joined = Array.isArray(value) ? value.join(', ') : value;
+      const display = joined === '' ? NO_ANSWER_TEXT : joined;
+      const questionBubble = this.renderer.recordAnswer(routeIndex, q.id, q.title, display);
+      if (questionBubble) this.scheduleHide(questionBubble);
     }
 
     // Remove the input area before moving on (so form:complete listeners
@@ -292,9 +393,106 @@ export class ChatFormElement extends HTMLElement {
       return;
     }
 
+    if (this.editingRouteIndex !== null) {
+      this.finishEdit();
+      return;
+    }
+
     this.controller.submitPage(this.pageAnswers);
 
     // Advance to the next page if the form is not complete.
+    if (this.controller.getCurrentPage()) {
+      this.renderCurrentPage(true);
+    }
+  }
+
+  /** Hides an answered question bubble after the configured delay, if one is set. */
+  private scheduleHide(bubble: HTMLElement): void {
+    if (this.autoHideMs <= 0) return;
+    const timerId = window.setTimeout(() => {
+      this.hideTimers.delete(timerId);
+      this.renderer?.hideBubble(bubble);
+    }, this.autoHideMs);
+    this.hideTimers.add(timerId);
+  }
+
+  /**
+   * Handles a click on an Edit icon. An answer on the page being asked simply
+   * goes back to that question. An answer on an earlier, already submitted page
+   * re-opens that page; the page the user was on is set aside until the edit is
+   * finished.
+   */
+  private handleEdit(routeIndex: number, questionId: string): void {
+    if (!this.controller || !this.renderer) return;
+
+    if (routeIndex === this.activeRouteIndex) {
+      const index = this.pageQuestions.findIndex((q) => q.id === questionId);
+      if (index < 0) return;
+      this.renderer.clearInputArea();
+      this.questionIndex = index;
+      this.renderQuestionStep(true);
+      return;
+    }
+
+    // Answers on the set-aside page cannot be edited until the current edit is done.
+    if (routeIndex >= this.controller.getRoute().length) return;
+
+    if (!this.suspendedPage) {
+      this.suspendedPage = {
+        pageQuestions: this.pageQuestions,
+        questionIndex: this.questionIndex,
+        pageAnswers: this.pageAnswers,
+        pageTitleLogged: this.pageTitleLogged,
+        pendingRouteIndex: this.pendingRouteIndex,
+      };
+    }
+    if (!this.controller.reopenPage(routeIndex)) {
+      this.suspendedPage = null;
+      return;
+    }
+
+    this.renderer.clearInputArea();
+    this.editingRouteIndex = routeIndex;
+    this.pageQuestions = this.controller.getVisibleQuestions();
+    this.pageAnswers = { ...this.controller.getRoute()[routeIndex].answers };
+    this.pageTitleLogged = true;
+    this.questionIndex = Math.max(
+      0,
+      this.pageQuestions.findIndex((q) => q.id === questionId),
+    );
+    this.renderQuestionStep(true);
+  }
+
+  /**
+   * Saves an edited earlier page. If its branching still leads to the same next
+   * page, the user goes back to where they were. If not, the pages that followed
+   * are dropped from the chat and the form carries on from the new page.
+   */
+  private finishEdit(): void {
+    if (!this.controller || !this.renderer || this.editingRouteIndex === null) return;
+
+    const editedIndex = this.editingRouteIndex;
+    const outcome = this.controller.submitPage(this.pageAnswers);
+    this.editingRouteIndex = null;
+
+    const suspended = this.suspendedPage;
+    this.suspendedPage = null;
+
+    if (outcome === 'edit-resumed' && suspended) {
+      // Questions on the page being asked may now be shown or hidden.
+      this.pageQuestions = this.controller.getVisibleQuestions();
+      this.questionIndex = Math.min(
+        suspended.questionIndex,
+        Math.max(0, this.pageQuestions.length - 1),
+      );
+      this.pageAnswers = suspended.pageAnswers;
+      this.pageTitleLogged = suspended.pageTitleLogged;
+      this.pendingRouteIndex = suspended.pendingRouteIndex;
+      this.renderQuestionStep(true);
+      return;
+    }
+
+    this.renderer.removeHistoryAfter(editedIndex);
     if (this.controller.getCurrentPage()) {
       this.renderCurrentPage(true);
     }

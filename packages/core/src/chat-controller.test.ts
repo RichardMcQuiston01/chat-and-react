@@ -71,7 +71,13 @@ describe('ChatController', () => {
   it('getOptions returns merged defaults', () => {
     const c = makeController();
     c.start();
-    expect(c.getOptions()).toEqual({ userResumable: true, localStorage: true, autoComplete: true });
+    expect(c.getOptions()).toEqual({
+      userResumable: true,
+      localStorage: true,
+      autoComplete: true,
+      allowEdit: false,
+      autoHideQuestions: 0,
+    });
   });
 
   it('fires page:submit listener on submitPage', () => {
@@ -213,5 +219,174 @@ describe('ChatController', () => {
     c.submitPage({ qa: 'answer' });
     expect((events[0] as { visitIndex: number }).visitIndex).toBe(0);
     expect((events[1] as { visitIndex: number }).visitIndex).toBe(1);
+  });
+});
+
+const editSchema = {
+  'x-chat-version': '1' as const,
+  'x-chat-pages': [
+    {
+      id: 'p1', title: 'P1',
+      questions: [{ id: 'choice', type: 'string' as const, 'x-chat-input': 'radio' as const, title: 'Pick?', enum: ['A', 'B'] }],
+      branching: [
+        { type: 'if' as const, form_element: 'choice', value: 'A', destination_id: 'p2' },
+        { type: 'always' as const, destination_id: 'p4' },
+      ],
+    },
+    {
+      id: 'p2', title: 'P2',
+      questions: [{ id: 'q2', type: 'string' as const, 'x-chat-input': 'text' as const, title: 'Q2?' }],
+      branching: [{ type: 'always' as const, destination_id: 'p3' }],
+    },
+    {
+      id: 'p3', title: 'P3',
+      questions: [{ id: 'q3', type: 'string' as const, 'x-chat-input': 'text' as const, title: 'Q3?' }],
+      branching: [{ type: 'always' as const, destination_id: '**FORM_COMPLETED**' }],
+    },
+    {
+      id: 'p4', title: 'P4',
+      questions: [{ id: 'q4', type: 'string' as const, 'x-chat-input': 'text' as const, title: 'Q4?' }],
+      branching: [{ type: 'always' as const, destination_id: '**FORM_COMPLETED**' }],
+    },
+  ],
+};
+
+describe('ChatController — editing earlier answers', () => {
+  it('reads allowEdit and autoHideQuestions from the schema options', () => {
+    const c = makeController({
+      ...singlePageSchema,
+      'x-chat-options': { allowEdit: true, autoHideQuestions: 3000 },
+    });
+    c.start();
+    expect(c.getOptions().allowEdit).toBe(true);
+    expect(c.getOptions().autoHideQuestions).toBe(3000);
+  });
+
+  it('records each submitted page in the route', () => {
+    const c = makeController(editSchema);
+    c.start();
+    c.submitPage({ choice: 'A' });
+    c.submitPage({ q2: 'two' });
+    expect(c.getRoute()).toEqual([
+      { pageId: 'p1', answers: { choice: 'A' } },
+      { pageId: 'p2', answers: { q2: 'two' } },
+    ]);
+  });
+
+  it('reopenPage returns false for an unknown index and after the form completes', () => {
+    const c = makeController(editSchema);
+    c.start();
+    c.submitPage({ choice: 'B' });
+    expect(c.reopenPage(5)).toBe(false);
+    c.submitPage({ q4: 'four' });
+    expect(c.getCurrentPage()).toBeNull();
+    expect(c.reopenPage(0)).toBe(false);
+  });
+
+  it('returns to the page the user was on when the branching is unchanged', () => {
+    const c = makeController(editSchema);
+    c.start();
+    c.submitPage({ choice: 'A' });
+    c.submitPage({ q2: 'two' });
+    expect(c.getCurrentPage()?.id).toBe('p3');
+
+    expect(c.reopenPage(1)).toBe(true);
+    expect(c.getCurrentPage()?.id).toBe('p2');
+    expect(c.submitPage({ q2: 'changed' })).toBe('edit-resumed');
+
+    expect(c.getCurrentPage()?.id).toBe('p3');
+    expect(c.getAnswers()).toEqual({ choice: 'A', q2: 'changed' });
+    expect(c.getRoute()).toHaveLength(2);
+  });
+
+  it('emits page:submit with edited: true and a new visitIndex for a re-submission', () => {
+    const c = makeController(editSchema);
+    c.start();
+    const events: ChatEvent[] = [];
+    c.on('page:submit', (e) => events.push(e));
+    c.submitPage({ choice: 'A' });
+    c.reopenPage(0);
+    c.submitPage({ choice: 'A' });
+
+    expect(events).toHaveLength(2);
+    expect(events[0]).toMatchObject({ pageId: 'p1', visitIndex: 0 });
+    expect(events[0]).not.toHaveProperty('edited');
+    expect(events[1]).toMatchObject({ pageId: 'p1', visitIndex: 1, edited: true });
+  });
+
+  it('re-routes to the new page and forgets answers from the abandoned branch', () => {
+    const c = makeController(editSchema);
+    c.start();
+    c.submitPage({ choice: 'A' });
+    c.submitPage({ q2: 'two' });
+    expect(c.getCurrentPage()?.id).toBe('p3');
+
+    c.reopenPage(0);
+    expect(c.submitPage({ choice: 'B' })).toBe('edit-rerouted');
+
+    expect(c.getCurrentPage()?.id).toBe('p4');
+    expect(c.getAnswers()).toEqual({ choice: 'B' });
+    expect(c.getRoute()).toEqual([{ pageId: 'p1', answers: { choice: 'B' } }]);
+  });
+
+  it('completes the form when an edit re-routes straight to the end', () => {
+    const c = makeController(editSchema);
+    c.start();
+    const completed: ChatEvent[] = [];
+    c.on('form:complete', (e) => completed.push(e));
+    c.submitPage({ choice: 'B' });
+    expect(c.getCurrentPage()?.id).toBe('p4');
+
+    c.reopenPage(0);
+    c.submitPage({ choice: 'B' });
+    expect(c.getCurrentPage()?.id).toBe('p4');
+
+    c.submitPage({ q4: 'four' });
+    expect(completed).toHaveLength(1);
+    expect(completed[0]).toMatchObject({ allAnswers: { choice: 'B', q4: 'four' } });
+  });
+
+  it('keeps returning to the original page when a second earlier page is edited mid-edit', () => {
+    const c = makeController(editSchema);
+    c.start();
+    c.submitPage({ choice: 'A' });
+    c.submitPage({ q2: 'two' });
+    expect(c.getCurrentPage()?.id).toBe('p3');
+
+    c.reopenPage(1);
+    c.reopenPage(0);
+    expect(c.submitPage({ choice: 'A' })).toBe('edit-resumed');
+    expect(c.getCurrentPage()?.id).toBe('p3');
+  });
+
+  it('shows the same questions when a page is re-opened as the first time it was asked', () => {
+    const schema = {
+      'x-chat-version': '1' as const,
+      'x-chat-pages': [{
+        id: 'p1', title: 'P1',
+        questions: [
+          { id: 'name', type: 'string' as const, 'x-chat-input': 'text' as const, title: 'Name?' },
+          {
+            id: 'bio', type: 'string' as const, 'x-chat-input': 'text' as const, title: 'Bio?',
+            'x-chat-condition': { '!!': [{ var: 'name' }] },
+          },
+        ],
+        branching: [{ type: 'always' as const, destination_id: 'p2' }],
+      }, {
+        id: 'p2', title: 'P2',
+        questions: [{ id: 'q2', type: 'string' as const, 'x-chat-input': 'text' as const, title: 'Q2?' }],
+        branching: [{ type: 'always' as const, destination_id: '**FORM_COMPLETED**' }],
+      }],
+    };
+    const c = makeController(schema);
+    c.start();
+    expect(c.getVisibleQuestions().map((q) => q.id)).toEqual(['name']);
+
+    c.submitPage({ name: 'Ada' });
+    c.reopenPage(0);
+    expect(c.getVisibleQuestions().map((q) => q.id)).toEqual(['name']);
+
+    c.submitPage({ name: 'Ada L.' });
+    expect(c.getCurrentPage()?.id).toBe('p2');
   });
 });

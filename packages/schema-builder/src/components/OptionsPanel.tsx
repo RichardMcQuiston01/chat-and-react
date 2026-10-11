@@ -9,7 +9,7 @@ interface Props {
 export function OptionsPanel({ schema, dispatch }: Props) {
   const opts = schema['x-chat-options'] ?? {};
 
-  function toggle(key: 'userResumable' | 'localStorage' | 'autoComplete') {
+  function toggle(key: 'userResumable' | 'localStorage' | 'autoComplete' | 'allowEdit') {
     dispatch({ type: 'UPDATE_OPTIONS', patch: { [key]: !opts[key] } });
   }
 
@@ -21,6 +21,7 @@ export function OptionsPanel({ schema, dispatch }: Props) {
           { key: 'userResumable', label: 'User resumable', defaultVal: true },
           { key: 'localStorage', label: 'Save to localStorage', defaultVal: false },
           { key: 'autoComplete', label: 'Autocomplete', defaultVal: true },
+          { key: 'allowEdit', label: 'Allow editing answers', defaultVal: false },
         ] as const
       ).map(({ key, label, defaultVal }) => {
         const checked = opts[key] ?? defaultVal;
@@ -35,6 +36,22 @@ export function OptionsPanel({ schema, dispatch }: Props) {
           </label>
         );
       })}
+      <label className="checkbox-row">
+        <input
+          type="number"
+          min={0}
+          step={1}
+          value={(opts.autoHideQuestions ?? 0) / 1000}
+          onChange={(event) =>
+            dispatch({
+              type: 'UPDATE_OPTIONS',
+              patch: { autoHideQuestions: Math.max(0, Math.round(Number(event.target.value) * 1000)) },
+            })
+          }
+          aria-label="Hide answered questions after this many seconds (0 keeps them)"
+        />
+        Hide answered questions after (seconds, 0 = never)
+      </label>
     </div>
   );
 }

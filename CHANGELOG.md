@@ -8,7 +8,19 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Radio and checkbox choices show a number (1-9). Pressing the number picks the radio choice, or ticks / unticks the checkbox
+- `allowEdit` option (attribute `allow-edit`): an Edit icon on each answer lets users change it. An earlier page can be re-opened; it is submitted again with `edited: true`, and if the new answer changes the route, the pages that followed are dropped
+- `autoHideQuestions` option (attribute `auto-hide-questions`): hides each answered question bubble after a delay, in milliseconds. Answers stay visible
+- `ChatController.getRoute()`, `getAnswers()` and `reopenPage()`, and `submitPage()` now returns a `SubmitOutcome`
+- Schema Builder: toggle for `allowEdit` and a field for `autoHideQuestions`
+- Demo: turned on `allowEdit` and `autoHideQuestions` (5 seconds)
+
 ### Changed
+
+- Pressing Enter in a dropdown acts like Continue
+- A question left blank shows "(no answer)" in the chat history
 
 - `<chat-form>` scrolls the Continue button into view after each question
 - `<chat-form>` asks the questions of a page one at a time, each with its own Continue button. `chat-page-submit` still fires once per page, after the last question is answered, with every answer from that page

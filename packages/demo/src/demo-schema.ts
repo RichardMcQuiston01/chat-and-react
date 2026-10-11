@@ -11,6 +11,8 @@ export const demoSchema: ChatSchema = {
     userResumable: true,
     localStorage: true,
     autoComplete: false,
+    allowEdit: true,
+    autoHideQuestions: 5000,
   },
   'x-chat-pages': [
     {
