@@ -1,5 +1,11 @@
-import type { ChatSchema, ChatOptions, ChatPage, ChatQuestion, BranchingRule } from '@richardmcquiston01/chat-and-react-core';
-import { emptySchema, emptyPage, emptyQuestion } from './schema-helpers.js';
+import type {
+  BranchingRule,
+  ChatOptions,
+  ChatPage,
+  ChatQuestion,
+  ChatSchema,
+} from '@richardmcquiston01/chat-and-react-core';
+import { emptyPage, emptyQuestion, emptySchema } from './schema-helpers.js';
 
 export interface BuilderState {
   schema: ChatSchema;
@@ -19,11 +25,21 @@ export type BuilderAction =
   | { type: 'UPDATE_PAGE'; index: number; patch: Partial<Pick<ChatPage, 'id' | 'title'>> }
   | { type: 'ADD_QUESTION'; pageIndex: number }
   | { type: 'REMOVE_QUESTION'; pageIndex: number; questionIndex: number }
-  | { type: 'UPDATE_QUESTION'; pageIndex: number; questionIndex: number; patch: Partial<ChatQuestion> }
+  | {
+      type: 'UPDATE_QUESTION';
+      pageIndex: number;
+      questionIndex: number;
+      patch: Partial<ChatQuestion>;
+    }
   | { type: 'MOVE_QUESTION'; pageIndex: number; from: number; to: number }
   | { type: 'ADD_BRANCHING_RULE'; pageIndex: number }
   | { type: 'REMOVE_BRANCHING_RULE'; pageIndex: number; ruleIndex: number }
-  | { type: 'UPDATE_BRANCHING_RULE'; pageIndex: number; ruleIndex: number; patch: Partial<BranchingRule> }
+  | {
+      type: 'UPDATE_BRANCHING_RULE';
+      pageIndex: number;
+      ruleIndex: number;
+      patch: Partial<BranchingRule>;
+    }
   | { type: 'UPDATE_OPTIONS'; patch: Partial<ChatOptions> }
   | { type: 'SET_RULES_JSON'; value: string }
   | { type: 'SET_VALIDATION_ERROR'; error: string | null }
@@ -68,7 +84,12 @@ export function reducer(state: BuilderState, action: BuilderAction): BuilderStat
       };
 
     case 'SET_SELECTED_PAGE':
-      return { ...state, selectedPageIndex: action.index, validationError: null, validationSuccess: false };
+      return {
+        ...state,
+        selectedPageIndex: action.index,
+        validationError: null,
+        validationSuccess: false,
+      };
 
     case 'ADD_PAGE': {
       const page = emptyPage(allPageIds(state.schema));

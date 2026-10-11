@@ -1,29 +1,37 @@
-import { describe, it, expect, afterEach, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import './index.js'; // registers <chat-form>
 
 const minimalSchema = JSON.stringify({
   'x-chat-version': '1',
-  'x-chat-pages': [{
-    id: 'p1',
-    title: 'Page One',
-    questions: [{ id: 'q1', type: 'string', 'x-chat-input': 'text', title: 'What is your name?' }],
-    branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
-  }],
+  'x-chat-pages': [
+    {
+      id: 'p1',
+      title: 'Page One',
+      questions: [
+        { id: 'q1', type: 'string', 'x-chat-input': 'text', title: 'What is your name?' },
+      ],
+      branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
+    },
+  ],
 });
 
 const twoPageSchema = JSON.stringify({
   'x-chat-version': '1',
   'x-chat-pages': [
     {
-      id: 'p1', title: 'P1',
-      questions: [{ id: 'q1', type: 'string', 'x-chat-input': 'radio', title: 'Pick?', enum: ['A', 'B'] }],
+      id: 'p1',
+      title: 'P1',
+      questions: [
+        { id: 'q1', type: 'string', 'x-chat-input': 'radio', title: 'Pick?', enum: ['A', 'B'] },
+      ],
       branching: [
         { type: 'if', form_element: 'q1', value: 'A', destination_id: 'p2' },
         { type: 'always', destination_id: '**FORM_COMPLETED**' },
       ],
     },
     {
-      id: 'p2', title: 'P2',
+      id: 'p2',
+      title: 'P2',
       questions: [{ id: 'q2', type: 'string', 'x-chat-input': 'text', title: 'Tell us more' }],
       branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
     },
@@ -91,11 +99,22 @@ describe('<chat-form>', () => {
   it('submits the page when Enter is pressed on a dropdown', () => {
     const dropdownSchema = JSON.stringify({
       'x-chat-version': '1',
-      'x-chat-pages': [{
-        id: 'p1', title: 'P1',
-        questions: [{ id: 'q1', type: 'string', 'x-chat-input': 'dropdown', title: 'Where?', enum: ['UK', 'US'] }],
-        branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
-      }],
+      'x-chat-pages': [
+        {
+          id: 'p1',
+          title: 'P1',
+          questions: [
+            {
+              id: 'q1',
+              type: 'string',
+              'x-chat-input': 'dropdown',
+              title: 'Where?',
+              enum: ['UK', 'US'],
+            },
+          ],
+          branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
+        },
+      ],
     });
     el = mount(dropdownSchema);
     const shadow = getShadow(el);
@@ -111,15 +130,17 @@ describe('<chat-form>', () => {
   describe('a page with several questions', () => {
     const twoQuestionSchema = JSON.stringify({
       'x-chat-version': '1',
-      'x-chat-pages': [{
-        id: 'p1',
-        title: 'Page One',
-        questions: [
-          { id: 'q1', type: 'string', 'x-chat-input': 'text', title: 'First?' },
-          { id: 'q2', type: 'string', 'x-chat-input': 'text', title: 'Second?' },
-        ],
-        branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
-      }],
+      'x-chat-pages': [
+        {
+          id: 'p1',
+          title: 'Page One',
+          questions: [
+            { id: 'q1', type: 'string', 'x-chat-input': 'text', title: 'First?' },
+            { id: 'q2', type: 'string', 'x-chat-input': 'text', title: 'Second?' },
+          ],
+          branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
+        },
+      ],
     });
 
     function activeLabels(shadow: ShadowRoot): (string | null)[] {
@@ -296,15 +317,22 @@ describe('<chat-form> number keys', () => {
 
   const checkboxSchema = JSON.stringify({
     'x-chat-version': '1',
-    'x-chat-pages': [{
-      id: 'p1',
-      title: 'P1',
-      questions: [{
-        id: 'topics', type: 'array', 'x-chat-input': 'checkbox', title: 'Topics?',
-        items: { enum: ['Tech', 'Art', 'Sport'] },
-      }],
-      branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
-    }],
+    'x-chat-pages': [
+      {
+        id: 'p1',
+        title: 'P1',
+        questions: [
+          {
+            id: 'topics',
+            type: 'array',
+            'x-chat-input': 'checkbox',
+            title: 'Topics?',
+            items: { enum: ['Tech', 'Art', 'Sport'] },
+          },
+        ],
+        branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
+      },
+    ],
   });
 
   it('shows a number next to each radio option', () => {
@@ -383,14 +411,17 @@ describe('<chat-form> auto-hide questions', () => {
 
   const twoStepSchema = JSON.stringify({
     'x-chat-version': '1',
-    'x-chat-pages': [{
-      id: 'p1', title: 'P1',
-      questions: [
-        { id: 'a', type: 'string', 'x-chat-input': 'text', title: 'First?' },
-        { id: 'b', type: 'string', 'x-chat-input': 'text', title: 'Second?' },
-      ],
-      branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
-    }],
+    'x-chat-pages': [
+      {
+        id: 'p1',
+        title: 'P1',
+        questions: [
+          { id: 'a', type: 'string', 'x-chat-input': 'text', title: 'First?' },
+          { id: 'b', type: 'string', 'x-chat-input': 'text', title: 'Second?' },
+        ],
+        branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
+      },
+    ],
   });
 
   it('hides an answered question after the delay but keeps the answer', () => {
@@ -457,25 +488,37 @@ describe('<chat-form> editing answers', () => {
     'x-chat-options': { allowEdit: true },
     'x-chat-pages': [
       {
-        id: 'p1', title: 'P1',
-        questions: [{ id: 'choice', type: 'string', 'x-chat-input': 'radio', title: 'Pick?', enum: ['A', 'B'] }],
+        id: 'p1',
+        title: 'P1',
+        questions: [
+          {
+            id: 'choice',
+            type: 'string',
+            'x-chat-input': 'radio',
+            title: 'Pick?',
+            enum: ['A', 'B'],
+          },
+        ],
         branching: [
           { type: 'if', form_element: 'choice', value: 'A', destination_id: 'p2' },
           { type: 'always', destination_id: 'p4' },
         ],
       },
       {
-        id: 'p2', title: 'P2',
+        id: 'p2',
+        title: 'P2',
         questions: [{ id: 'q2', type: 'string', 'x-chat-input': 'text', title: 'Q2?' }],
         branching: [{ type: 'always', destination_id: 'p3' }],
       },
       {
-        id: 'p3', title: 'P3',
+        id: 'p3',
+        title: 'P3',
         questions: [{ id: 'q3', type: 'string', 'x-chat-input': 'text', title: 'Q3?' }],
         branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
       },
       {
-        id: 'p4', title: 'P4',
+        id: 'p4',
+        title: 'P4',
         questions: [{ id: 'q4', type: 'string', 'x-chat-input': 'text', title: 'Q4?' }],
         branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
       },
@@ -485,14 +528,17 @@ describe('<chat-form> editing answers', () => {
   const twoQuestionPage = JSON.stringify({
     'x-chat-version': '1',
     'x-chat-options': { allowEdit: true },
-    'x-chat-pages': [{
-      id: 'p1', title: 'P1',
-      questions: [
-        { id: 'a', type: 'string', 'x-chat-input': 'text', title: 'First?' },
-        { id: 'b', type: 'string', 'x-chat-input': 'text', title: 'Second?' },
-      ],
-      branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
-    }],
+    'x-chat-pages': [
+      {
+        id: 'p1',
+        title: 'P1',
+        questions: [
+          { id: 'a', type: 'string', 'x-chat-input': 'text', title: 'First?' },
+          { id: 'b', type: 'string', 'x-chat-input': 'text', title: 'Second?' },
+        ],
+        branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
+      },
+    ],
   });
 
   function pickAndContinue(shadow: ShadowRoot, value: string): void {
@@ -701,11 +747,14 @@ describe('<chat-form> Enter in a textarea', () => {
 
   const textareaSchema = JSON.stringify({
     'x-chat-version': '1',
-    'x-chat-pages': [{
-      id: 'p1', title: 'P1',
-      questions: [{ id: 'notes', type: 'string', 'x-chat-input': 'textarea', title: 'Notes?' }],
-      branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
-    }],
+    'x-chat-pages': [
+      {
+        id: 'p1',
+        title: 'P1',
+        questions: [{ id: 'notes', type: 'string', 'x-chat-input': 'textarea', title: 'Notes?' }],
+        branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
+      },
+    ],
   });
 
   it('continues on Enter', () => {
@@ -729,7 +778,10 @@ describe('<chat-form> Enter in a textarea', () => {
     const box = shadow.querySelector('textarea') as HTMLTextAreaElement;
 
     const event = new KeyboardEvent('keydown', {
-      key: 'Enter', shiftKey: true, bubbles: true, cancelable: true,
+      key: 'Enter',
+      shiftKey: true,
+      bubbles: true,
+      cancelable: true,
     });
     box.dispatchEvent(event);
     expect(event.defaultPrevented).toBe(false);
@@ -744,7 +796,12 @@ describe('<chat-form> Enter in a textarea', () => {
     const box = shadow.querySelector('textarea') as HTMLTextAreaElement;
 
     box.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Enter', isComposing: true, bubbles: true, cancelable: true }),
+      new KeyboardEvent('keydown', {
+        key: 'Enter',
+        isComposing: true,
+        bubbles: true,
+        cancelable: true,
+      }),
     );
     expect(completed).toHaveLength(0);
   });
@@ -799,7 +856,9 @@ describe('<chat-form> typing and thinking', () => {
   }
 
   function typedText(shadow: ShadowRoot): string {
-    return label(shadow).querySelector('span[aria-hidden="true"] > span:first-child')?.textContent ?? '';
+    return (
+      label(shadow).querySelector('span[aria-hidden="true"] > span:first-child')?.textContent ?? ''
+    );
   }
 
   function inputHidden(shadow: ShadowRoot): boolean {
@@ -852,7 +911,10 @@ describe('<chat-form> typing and thinking', () => {
   it('shows the question straight away when the user prefers reduced motion', () => {
     vi.useFakeTimers();
     vi.stubGlobal('matchMedia', () => ({ matches: true }));
-    Object.defineProperty(window, 'matchMedia', { value: () => ({ matches: true }), configurable: true });
+    Object.defineProperty(window, 'matchMedia', {
+      value: () => ({ matches: true }),
+      configurable: true,
+    });
     el = mount(schemaWithOptions(minimalSchema, { typingSpeed: 50 }));
     const shadow = getShadow(el);
     expect(label(shadow).textContent).toBe('What is your name?');
@@ -905,13 +967,22 @@ describe('<chat-form> typing and thinking', () => {
     const schema = JSON.stringify({
       'x-chat-version': '1',
       'x-chat-options': { thinkingDelay: 5000 },
-      'x-chat-pages': [{
-        id: 'p1', title: 'P1',
-        questions: [{
-          id: 'q1', type: 'string', 'x-chat-input': 'text', title: 'Quick one?', 'x-chat-thinking': 100,
-        }],
-        branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
-      }],
+      'x-chat-pages': [
+        {
+          id: 'p1',
+          title: 'P1',
+          questions: [
+            {
+              id: 'q1',
+              type: 'string',
+              'x-chat-input': 'text',
+              title: 'Quick one?',
+              'x-chat-thinking': 100,
+            },
+          ],
+          branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
+        },
+      ],
     });
     el = mount(schema);
     const shadow = getShadow(el);
@@ -923,13 +994,22 @@ describe('<chat-form> typing and thinking', () => {
     const schema = JSON.stringify({
       'x-chat-version': '1',
       'x-chat-options': { thinkingDelay: 5000 },
-      'x-chat-pages': [{
-        id: 'p1', title: 'P1',
-        questions: [{
-          id: 'q1', type: 'string', 'x-chat-input': 'text', title: 'Right away?', 'x-chat-thinking': 0,
-        }],
-        branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
-      }],
+      'x-chat-pages': [
+        {
+          id: 'p1',
+          title: 'P1',
+          questions: [
+            {
+              id: 'q1',
+              type: 'string',
+              'x-chat-input': 'text',
+              title: 'Right away?',
+              'x-chat-thinking': 0,
+            },
+          ],
+          branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
+        },
+      ],
     });
     el = mount(schema);
     const shadow = getShadow(el);
@@ -941,14 +1021,22 @@ describe('<chat-form> typing and thinking', () => {
     vi.useFakeTimers();
     const schema = JSON.stringify({
       'x-chat-version': '1',
-      'x-chat-pages': [{
-        id: 'p1', title: 'P1',
-        questions: [{
-          id: 'q1', type: 'string', 'x-chat-input': 'text', title: 'Hmm?',
-          'x-chat-thinking': { delay: 300, text: 'Let me think...' },
-        }],
-        branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
-      }],
+      'x-chat-pages': [
+        {
+          id: 'p1',
+          title: 'P1',
+          questions: [
+            {
+              id: 'q1',
+              type: 'string',
+              'x-chat-input': 'text',
+              title: 'Hmm?',
+              'x-chat-thinking': { delay: 300, text: 'Let me think...' },
+            },
+          ],
+          branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
+        },
+      ],
     });
     el = mount(schema);
     const shadow = getShadow(el);
@@ -963,14 +1051,17 @@ describe('<chat-form> typing and thinking', () => {
       schemaWithOptions(
         JSON.stringify({
           'x-chat-version': '1',
-          'x-chat-pages': [{
-            id: 'p1', title: 'P1',
-            questions: [
-              { id: 'a', type: 'string', 'x-chat-input': 'text', title: 'First?' },
-              { id: 'b', type: 'string', 'x-chat-input': 'text', title: 'Second?' },
-            ],
-            branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
-          }],
+          'x-chat-pages': [
+            {
+              id: 'p1',
+              title: 'P1',
+              questions: [
+                { id: 'a', type: 'string', 'x-chat-input': 'text', title: 'First?' },
+                { id: 'b', type: 'string', 'x-chat-input': 'text', title: 'Second?' },
+              ],
+              branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
+            },
+          ],
         }),
         { thinkingDelay: 200, allowEdit: true },
       ),
@@ -1022,14 +1113,17 @@ describe('<chat-form> hiding answered questions and answers', () => {
 
   const twoQuestionSchema = JSON.stringify({
     'x-chat-version': '1',
-    'x-chat-pages': [{
-      id: 'p1', title: 'P1',
-      questions: [
-        { id: 'a', type: 'string', 'x-chat-input': 'text', title: 'First?' },
-        { id: 'b', type: 'string', 'x-chat-input': 'text', title: 'Second?' },
-      ],
-      branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
-    }],
+    'x-chat-pages': [
+      {
+        id: 'p1',
+        title: 'P1',
+        questions: [
+          { id: 'a', type: 'string', 'x-chat-input': 'text', title: 'First?' },
+          { id: 'b', type: 'string', 'x-chat-input': 'text', title: 'Second?' },
+        ],
+        branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
+      },
+    ],
   });
 
   function answerFirst(shadow: ShadowRoot): { question: HTMLElement; answer: HTMLElement } {
@@ -1138,7 +1232,9 @@ describe('<chat-form> hiding answered questions and answers', () => {
 
   it('marks the history list so completed pairs can be spaced apart', () => {
     el = mount(twoQuestionSchema);
-    expect(getShadow(el).querySelector('[part="message-list"]')?.classList.contains('car-messages')).toBe(true);
+    expect(
+      getShadow(el).querySelector('[part="message-list"]')?.classList.contains('car-messages'),
+    ).toBe(true);
   });
 });
 
@@ -1152,15 +1248,18 @@ describe('<chat-form> Edit icon slot', () => {
   const editablePage = schemaWithOptions(
     JSON.stringify({
       'x-chat-version': '1',
-      'x-chat-pages': [{
-        id: 'p1', title: 'P1',
-        questions: [
-          { id: 'a', type: 'string', 'x-chat-input': 'text', title: 'First?' },
-          { id: 'b', type: 'string', 'x-chat-input': 'text', title: 'Second?' },
-          { id: 'c', type: 'string', 'x-chat-input': 'text', title: 'Third?' },
-        ],
-        branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
-      }],
+      'x-chat-pages': [
+        {
+          id: 'p1',
+          title: 'P1',
+          questions: [
+            { id: 'a', type: 'string', 'x-chat-input': 'text', title: 'First?' },
+            { id: 'b', type: 'string', 'x-chat-input': 'text', title: 'Second?' },
+            { id: 'c', type: 'string', 'x-chat-input': 'text', title: 'Third?' },
+          ],
+          branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
+        },
+      ],
     }),
     { allowEdit: true },
   );
@@ -1185,7 +1284,10 @@ describe('<chat-form> Edit icon slot', () => {
 
   function slottedText(button: Element): string | undefined {
     const slot = button.querySelector('slot') as HTMLSlotElement;
-    return slot.assignedNodes().map((node) => node.textContent).join('');
+    return slot
+      .assignedNodes()
+      .map((node) => node.textContent)
+      .join('');
   }
 
   it('shows a pencil when the page supplies no icon', () => {

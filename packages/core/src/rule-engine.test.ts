@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { RuleEngine } from './rule-engine.js';
 
 describe('RuleEngine', () => {
@@ -37,7 +37,7 @@ describe('RuleEngine', () => {
 
   it('throws RULE_EVAL_FAILED for invalid rule', () => {
     try {
-      engine.evaluate({ '__invalid__': null } as never, {});
+      engine.evaluate({ __invalid__: null } as never, {});
     } catch (e: unknown) {
       expect((e as { code: string }).code).toBe('RULE_EVAL_FAILED');
     }

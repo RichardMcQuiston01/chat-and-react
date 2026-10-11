@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
-import { EventEmitterOutputAdapter } from './event-emitter-adapter.js';
 import type { ChatEvent } from '@richardmcquiston01/chat-and-react-core';
+import { describe, expect, it, vi } from 'vitest';
+import { EventEmitterOutputAdapter } from './event-emitter-adapter.js';
 
 describe('EventEmitterOutputAdapter', () => {
   it('emits page:submit on the emitter with the event payload', () => {

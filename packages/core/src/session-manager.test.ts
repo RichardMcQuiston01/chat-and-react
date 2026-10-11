@@ -1,7 +1,7 @@
 // packages/core/src/session-manager.test.ts
-import { describe, it, expect, beforeEach } from 'vitest';
-import { SessionManager } from './session-manager.js';
+import { beforeEach, describe, expect, it } from 'vitest';
 import type { StorageBackend } from './session-manager.js';
+import { SessionManager } from './session-manager.js';
 
 function makeStorage(): StorageBackend {
   const store: Record<string, string> = {};
@@ -26,11 +26,19 @@ function makeStorage(): StorageBackend {
 
 function makeThrowingStorage(): StorageBackend {
   return {
-    getItem: () => { throw new Error('Storage blocked'); },
-    setItem: () => { throw new Error('Storage blocked'); },
-    removeItem: () => { throw new Error('Storage blocked'); },
+    getItem: () => {
+      throw new Error('Storage blocked');
+    },
+    setItem: () => {
+      throw new Error('Storage blocked');
+    },
+    removeItem: () => {
+      throw new Error('Storage blocked');
+    },
     key: () => null,
-    get length() { return 0; },
+    get length() {
+      return 0;
+    },
   };
 }
 

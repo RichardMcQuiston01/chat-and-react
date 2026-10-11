@@ -1,11 +1,11 @@
 import { useReducer } from 'react';
-import { reducer, initialState } from './reducer.js';
-import { Toolbar } from './components/Toolbar.js';
-import { PageList } from './components/PageList.js';
+import { JsonPreview } from './components/JsonPreview.js';
 import { OptionsPanel } from './components/OptionsPanel.js';
 import { PageEditor } from './components/PageEditor.js';
+import { PageList } from './components/PageList.js';
 import { RulesPanel } from './components/RulesPanel.js';
-import { JsonPreview } from './components/JsonPreview.js';
+import { Toolbar } from './components/Toolbar.js';
+import { initialState, reducer } from './reducer.js';
 import './styles/app.css';
 
 export function App() {
@@ -17,7 +17,9 @@ export function App() {
   let ruleNames: string[] = [];
   try {
     ruleNames = Object.keys(JSON.parse(state.rulesJson) as object);
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 
   return (
     <div className="app">
@@ -26,13 +28,25 @@ export function App() {
       {state.validationError && (
         <div className="banner banner--error">
           {state.validationError}
-          <button className="banner-close" onClick={() => dispatch({ type: 'SET_VALIDATION_ERROR', error: null })}>×</button>
+          <button
+            type="button"
+            className="banner-close"
+            onClick={() => dispatch({ type: 'SET_VALIDATION_ERROR', error: null })}
+          >
+            ×
+          </button>
         </div>
       )}
       {state.validationSuccess && (
         <div className="banner banner--success">
           Schema is valid.
-          <button className="banner-close" onClick={() => dispatch({ type: 'SET_VALIDATION_SUCCESS', success: false })}>×</button>
+          <button
+            type="button"
+            className="banner-close"
+            onClick={() => dispatch({ type: 'SET_VALIDATION_SUCCESS', success: false })}
+          >
+            ×
+          </button>
         </div>
       )}
 

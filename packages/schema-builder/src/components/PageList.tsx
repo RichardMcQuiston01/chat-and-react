@@ -20,6 +20,7 @@ export function PageList({ schema, selectedIndex, dispatch }: Props) {
             className={`page-list-item${i === selectedIndex ? ' page-list-item--active' : ''}`}
           >
             <button
+              type="button"
               className="page-list-label"
               onClick={() => dispatch({ type: 'SET_SELECTED_PAGE', index: i })}
             >
@@ -27,6 +28,7 @@ export function PageList({ schema, selectedIndex, dispatch }: Props) {
               <span className="page-list-title">{page.title || page.id || '(untitled)'}</span>
             </button>
             <button
+              type="button"
               className="page-list-remove"
               title="Remove page"
               disabled={pages.length <= 1}
@@ -38,6 +40,7 @@ export function PageList({ schema, selectedIndex, dispatch }: Props) {
         ))}
       </ul>
       <button
+        type="button"
         className="btn btn-ghost page-list-add"
         onClick={() => dispatch({ type: 'ADD_PAGE' })}
       >

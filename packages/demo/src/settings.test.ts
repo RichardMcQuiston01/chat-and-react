@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
+import type { DemoSettings, StorageLike } from './settings.js';
 import {
-  DEFAULT_SETTINGS,
-  SETTINGS_STORAGE_KEY,
   clearSettings,
+  DEFAULT_SETTINGS,
   loadSettings,
+  SETTINGS_STORAGE_KEY,
   sanitizeSettings,
   saveSettings,
 } from './settings.js';
-import type { DemoSettings, StorageLike } from './settings.js';
 
 function makeStorage(initial: Record<string, string> = {}): StorageLike & {
   data: Record<string, string>;

@@ -1,11 +1,13 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { WebhookErrorAdapter } from './webhook-error-adapter.js';
 import type { ChatError } from '@richardmcquiston01/chat-and-react-core';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { WebhookErrorAdapter } from './webhook-error-adapter.js';
 
 const ERROR: ChatError = { code: 'ADAPTER_ERROR', message: 'something went wrong' };
 
 describe('WebhookErrorAdapter', () => {
-  afterEach(() => { vi.unstubAllGlobals(); });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
 
   it('POSTs the error as JSON to the configured URL', async () => {
     const mockFetch = vi.fn().mockResolvedValue({ ok: true });

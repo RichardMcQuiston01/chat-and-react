@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { IdentityInputAdapter } from './identity-input-adapter.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ChatError, ChatEvent } from '../types.js';
 import { BrowserEventAdapter } from './browser-event-adapter.js';
 import { ConsoleErrorAdapter } from './console-error-adapter.js';
-import type { ChatEvent, ChatError } from '../types.js';
+import { IdentityInputAdapter } from './identity-input-adapter.js';
 
 describe('IdentityInputAdapter', () => {
   const adapter = new IdentityInputAdapter();
@@ -24,7 +24,10 @@ describe('BrowserEventAdapter', () => {
   beforeEach(() => {
     dispatched = [];
     const mockDoc = {
-      dispatchEvent: vi.fn((e: Event) => { dispatched.push(e as CustomEvent); return true; }),
+      dispatchEvent: vi.fn((e: Event) => {
+        dispatched.push(e as CustomEvent);
+        return true;
+      }),
     };
     vi.stubGlobal('document', mockDoc);
     adapter = new BrowserEventAdapter();

@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
-import { MongoDbErrorAdapter } from './mongodb-error-adapter.js';
 import type { ChatError } from '@richardmcquiston01/chat-and-react-core';
+import { describe, expect, it, vi } from 'vitest';
+import { MongoDbErrorAdapter } from './mongodb-error-adapter.js';
 
 const ERROR: ChatError = { code: 'RULE_EVAL_FAILED', message: 'bad rule', cause: new Error('x') };
 

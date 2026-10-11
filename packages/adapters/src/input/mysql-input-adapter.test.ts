@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { MySqlInputAdapter } from './mysql-input-adapter.js';
 
 const SCHEMA = { 'x-chat-version': '1', 'x-chat-pages': [] };
@@ -6,7 +6,11 @@ const SCHEMA = { 'x-chat-version': '1', 'x-chat-pages': [] };
 describe('MySqlInputAdapter', () => {
   it('returns the schema row fetched from the database', async () => {
     const execute = vi.fn().mockResolvedValue([[SCHEMA], []]);
-    const adapter = await MySqlInputAdapter.create({ execute }, 'SELECT schema FROM schemas WHERE id = ?', [1]);
+    const adapter = await MySqlInputAdapter.create(
+      { execute },
+      'SELECT schema FROM schemas WHERE id = ?',
+      [1],
+    );
 
     expect(execute).toHaveBeenCalledWith('SELECT schema FROM schemas WHERE id = ?', [1]);
     expect(adapter.transform(null)).toBe(SCHEMA);

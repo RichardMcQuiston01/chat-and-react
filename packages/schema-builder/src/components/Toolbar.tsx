@@ -1,7 +1,7 @@
-import { useRef } from 'react';
-import type { BuilderState, BuilderAction } from '../reducer.js';
-import { parseSchema } from '@richardmcquiston01/chat-and-react-core';
 import type { ChatSchema, JsonLogicRule } from '@richardmcquiston01/chat-and-react-core';
+import { parseSchema } from '@richardmcquiston01/chat-and-react-core';
+import { useRef } from 'react';
+import type { BuilderAction, BuilderState } from '../reducer.js';
 
 interface Props {
   state: BuilderState;
@@ -12,9 +12,7 @@ export function Toolbar({ state, dispatch }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
 
   function handleNew() {
-    const hasContent = state.schema['x-chat-pages'].some(
-      (p) => p.title || p.questions.length > 0,
-    );
+    const hasContent = state.schema['x-chat-pages'].some((p) => p.title || p.questions.length > 0);
     if (hasContent && !window.confirm('Start a new schema? Unsaved changes will be lost.')) return;
     dispatch({ type: 'NEW_SCHEMA' });
   }
@@ -63,7 +61,10 @@ export function Toolbar({ state, dispatch }: Props) {
       parseSchema(schema);
     } catch (e) {
       const err = e as { message?: string };
-      dispatch({ type: 'SET_VALIDATION_ERROR', error: `Cannot export: ${err.message ?? 'invalid schema'}` });
+      dispatch({
+        type: 'SET_VALIDATION_ERROR',
+        error: `Cannot export: ${err.message ?? 'invalid schema'}`,
+      });
       return;
     }
     const blob = new Blob([JSON.stringify(schema, null, 2)], { type: 'application/json' });
@@ -77,13 +78,29 @@ export function Toolbar({ state, dispatch }: Props) {
 
   return (
     <div className="toolbar">
-      <span className="toolbar-brand">chat-and-react <span className="toolbar-sub">Schema Builder</span></span>
+      <span className="toolbar-brand">
+        chat-and-react <span className="toolbar-sub">Schema Builder</span>
+      </span>
       <div className="toolbar-actions">
-        <button onClick={handleNew} className="btn btn-ghost">New</button>
-        <button onClick={() => fileRef.current?.click()} className="btn btn-ghost">Import</button>
-        <input ref={fileRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleImport} />
-        <button onClick={handleValidate} className="btn btn-ghost">Validate</button>
-        <button onClick={handleExport} className="btn btn-primary">Export JSON</button>
+        <button type="button" onClick={handleNew} className="btn btn-ghost">
+          New
+        </button>
+        <button type="button" onClick={() => fileRef.current?.click()} className="btn btn-ghost">
+          Import
+        </button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".json"
+          style={{ display: 'none' }}
+          onChange={handleImport}
+        />
+        <button type="button" onClick={handleValidate} className="btn btn-ghost">
+          Validate
+        </button>
+        <button type="button" onClick={handleExport} className="btn btn-primary">
+          Export JSON
+        </button>
       </div>
     </div>
   );

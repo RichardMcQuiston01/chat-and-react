@@ -12,8 +12,8 @@ export function RulesPanel({ rulesJson, rulesJsonError, dispatch }: Props) {
       <div className="section-label">
         Named Rules
         <span className="section-hint">
-          Define JsonLogic rules here, then reference them in questions via a condition ref.
-          Format: <code>{'{ "rule-name": { "!!": [{ "var": "question_id" }] } }'}</code>
+          Define JsonLogic rules here, then reference them in questions via a condition ref. Format:{' '}
+          <code>{'{ "rule-name": { "!!": [{ "var": "question_id" }] } }'}</code>
         </span>
       </div>
       <textarea

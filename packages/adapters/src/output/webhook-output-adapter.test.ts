@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { WebhookOutputAdapter } from './webhook-output-adapter.js';
 import type { ChatEvent } from '@richardmcquiston01/chat-and-react-core';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { WebhookOutputAdapter } from './webhook-output-adapter.js';
 
 const PAGE_EVENT: ChatEvent = {
   type: 'page:submit',
@@ -11,7 +11,9 @@ const PAGE_EVENT: ChatEvent = {
 };
 
 describe('WebhookOutputAdapter', () => {
-  afterEach(() => { vi.unstubAllGlobals(); });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
 
   it('POSTs the event as JSON to the configured URL', async () => {
     const mockFetch = vi.fn().mockResolvedValue({ ok: true });

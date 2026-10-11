@@ -1,5 +1,5 @@
-import { DEFAULT_SETTINGS, HIDE_ANIMATIONS, sanitizeSettings } from './settings.js';
 import type { DemoSettings } from './settings.js';
+import { DEFAULT_SETTINGS, HIDE_ANIMATIONS, sanitizeSettings } from './settings.js';
 
 type FlagKey = 'userResumable' | 'localStorage' | 'autoComplete' | 'allowEdit' | 'showContinueIcon';
 type SecondsKey = 'autoHideQuestions' | 'autoHideAnswers' | 'thinkingDelay';
@@ -22,15 +22,29 @@ const FLAG_FIELDS: readonly FlagField[] = [
   { key: 'allowEdit', label: 'Allow editing answers', hint: 'Shows an Edit icon on each answer.' },
   { key: 'showContinueIcon', label: 'Continue button icon', hint: 'Shows an arrow on Continue.' },
   { key: 'userResumable', label: 'Resumable', hint: 'Saves progress so users can come back.' },
-  { key: 'localStorage', label: 'Save answers as typed', hint: 'Writes each answer to localStorage.' },
+  {
+    key: 'localStorage',
+    label: 'Save answers as typed',
+    hint: 'Writes each answer to localStorage.',
+  },
   { key: 'autoComplete', label: 'Browser autocomplete', hint: 'Off adds autocomplete="off".' },
 ];
 
 const NUMBER_FIELDS: readonly NumberField[] = [
-  { key: 'autoHideQuestions', label: 'Hide questions after', hint: '0 keeps them.', unit: 'seconds' },
+  {
+    key: 'autoHideQuestions',
+    label: 'Hide questions after',
+    hint: '0 keeps them.',
+    unit: 'seconds',
+  },
   { key: 'autoHideAnswers', label: 'Hide answers after', hint: '0 keeps them.', unit: 'seconds' },
   { key: 'thinkingDelay', label: 'Thinking bubble', hint: '0 turns it off.', unit: 'seconds' },
-  { key: 'typingSpeed', label: 'Typing speed', hint: 'Per character. 0 shows questions at once.', unit: 'milliseconds' },
+  {
+    key: 'typingSpeed',
+    label: 'Typing speed',
+    hint: 'Per character. 0 shows questions at once.',
+    unit: 'milliseconds',
+  },
 ];
 
 export interface SettingsModalHandlers {
@@ -103,14 +117,20 @@ export function createSettingsModal(
     input.step = field.unit === 'seconds' ? '0.1' : '1';
     input.name = field.key;
     numberInputs.set(field.key, input);
-    row.append(text, input, makeElement('span', 'settings-unit', field.unit === 'seconds' ? 's' : 'ms'));
+    row.append(
+      text,
+      input,
+      makeElement('span', 'settings-unit', field.unit === 'seconds' ? 's' : 'ms'),
+    );
     form.appendChild(row);
   }
 
   const animationSelect = makeElement('select', 'settings-select');
   animationSelect.name = 'hideAnimation';
   for (const animation of HIDE_ANIMATIONS) {
-    animationSelect.appendChild(makeElement('option', undefined, animation)).setAttribute('value', animation);
+    animationSelect
+      .appendChild(makeElement('option', undefined, animation))
+      .setAttribute('value', animation);
   }
   const animationRow = makeElement('label', 'settings-row');
   const animationText = makeElement('span', 'settings-label', 'Hide animation');
@@ -134,7 +154,11 @@ export function createSettingsModal(
   form.appendChild(status);
 
   const actions = makeElement('div', 'settings-actions');
-  const saveButton = makeElement('button', 'settings-btn settings-btn--primary', 'Save and restart');
+  const saveButton = makeElement(
+    'button',
+    'settings-btn settings-btn--primary',
+    'Save and restart',
+  );
   saveButton.type = 'submit';
   const resetButton = makeElement('button', 'settings-btn', 'Reset to defaults');
   resetButton.type = 'button';
