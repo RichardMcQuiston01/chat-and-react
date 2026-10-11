@@ -67,9 +67,13 @@
         --car-accent: #4f46e5;
         --car-radius: 1rem;
         --car-font: system-ui, sans-serif;
+        background: var(--car-bg);
         border-radius: 1rem;
         box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-        overflow: hidden;
+        /* min-height: 0 lets the form shrink to the panel so it scrolls
+           instead of being clipped once the chat history grows. */
+        min-height: 0;
+        overflow-y: auto;
       }
 
       #complete-banner[hidden] { display: none; }
@@ -175,15 +179,6 @@
         </div>
       </aside>
     </main>
-    <aside> not <div>: this is complementary content, and the landmark lets
-          screen-reader users skip it.
-        - The QR sits on an explicit white plate. QR scanners need light modules to
-          be genuinely light; rendering black-on-dark-navy breaks scanning.
-        - The dismiss button is real. A donation ask that cannot be closed is a
-          dark pattern, and on a demo it covers content on small screens.
-        - aria-label on the link repeats the destination because "Donate via
-          Stripe →" read aloud with the arrow is awkward.
-    -->
     <aside class="donate-card" id="donateCard" aria-labelledby="donateCardTitle">
       <button
         class="donate-card__dismiss"

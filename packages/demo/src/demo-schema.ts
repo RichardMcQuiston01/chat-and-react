@@ -125,7 +125,7 @@ export const demoSchema: ChatSchema = {
           type: 'string',
           'x-chat-input': 'textarea',
           title: 'Any final comments or feedback for us?',
-          'x-chat-placeholder': 'Optional — press Send to skip.',
+          'x-chat-placeholder': 'Optional — press Continue to skip.',
         },
       ],
       branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],

@@ -10,6 +10,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- `<chat-form>` scrolls the Continue button into view after each question
 - `<chat-form>` asks the questions of a page one at a time, each with its own Continue button. `chat-page-submit` still fires once per page, after the last question is answered, with every answer from that page
 - Pressing Enter in a single-line input acts like Continue
 
@@ -18,6 +19,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - `<chat-form>` no longer shows each question twice. Questions now appear once, directly above their own input, and move into the chat history as question / answer pairs when a page is submitted
 - Radio buttons and checkboxes sit next to their labels instead of stretching across the full width
 - Checkbox questions that declare their choices under `items.enum` now render their options
+- Demo: the chat panel scrolls (instead of clipping) so the Continue button stays reachable as the history grows, and a stray piece of the donate card's HTML comment no longer shows as text at the bottom of the page
 - Demo: the form renders on load, the "Form complete!" banner stays hidden until the form is done, and "Start over" keeps the event log working
 
 ---
