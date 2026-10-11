@@ -84,6 +84,11 @@ export class ChatFormElement extends HTMLElement {
   private shadow: ShadowRoot | null = null;
   private readonly registry = new AdapterRegistry();
 
+  /** Visible questions of the current page, asked one at a time. */
+  private pageQuestions: ChatQuestion[] = [];
+  private questionIndex = 0;
+  private pageAnswers: AnswerMap = {};
+
   connectedCallback(): void {
     const shadow = this.attachShadow({ mode: 'open' });
     this.shadow = shadow;
@@ -160,49 +165,53 @@ export class ChatFormElement extends HTMLElement {
     this.renderCurrentPage();
   }
 
-  /** Renders the visible questions for the current page. */
-  private renderCurrentPage(): void {
+  /**
+   * Starts the current page. Its visible questions are asked one at a time,
+   * each with its own Continue button; the page is submitted once the last
+   * one is answered.
+   */
+  private renderCurrentPage(autofocus = false): void {
+    if (!this.controller || !this.renderer) return;
+    if (!this.controller.getCurrentPage()) return;
+
+    this.pageQuestions = this.controller.getVisibleQuestions();
+    this.questionIndex = 0;
+    this.pageAnswers = {};
+    this.renderQuestionStep(autofocus);
+  }
+
+  /** The question being asked now, as a list (empty for a page with no questions). */
+  private getStepQuestions(): ChatQuestion[] {
+    const question = this.pageQuestions[this.questionIndex];
+    return question ? [question] : [];
+  }
+
+  /** Renders the current step of the current page: one question and its Continue button. */
+  private renderQuestionStep(autofocus: boolean): void {
     if (!this.controller || !this.renderer) return;
     const page = this.controller.getCurrentPage();
     if (!page) return;
 
-    const questions = this.controller.getVisibleQuestions();
-
-    this.renderer.renderPage(page, questions);
+    this.renderer.renderPage(page, this.getStepQuestions(), {
+      showTitle: this.questionIndex === 0,
+    });
 
     const inputArea = this.renderer.getInputArea();
     if (!inputArea) return;
 
-    // Wire up the submit button.
+    // Wire up the Continue button.
     const btn = inputArea.querySelector<HTMLButtonElement>('.car-btn-submit');
     if (btn) {
-      btn.addEventListener('click', () => this.handleSubmit(questions));
+      btn.addEventListener('click', () => this.handleContinue());
     }
 
-    // Enter in a single-line input moves on to the next question, and submits
-    // the page from the last one. Textareas keep Enter for new lines, and
-    // buttons already act on Enter.
+    // Enter in a single-line input acts like Continue. Textareas keep Enter
+    // for new lines, and buttons already act on Enter.
     inputArea.addEventListener('keydown', (event: Event) => {
       const keyEvent = event as KeyboardEvent;
-      const target = keyEvent.target;
-      if (keyEvent.key !== 'Enter' || !(target instanceof HTMLInputElement)) return;
+      if (keyEvent.key !== 'Enter' || !(keyEvent.target instanceof HTMLInputElement)) return;
       keyEvent.preventDefault();
-
-      const questionElements = Array.from(
-        inputArea.querySelectorAll<HTMLElement>('[data-question-id]'),
-      );
-      const currentIndex = questionElements.findIndex((el) => el.contains(target));
-      const nextElement = questionElements[currentIndex + 1];
-      if (currentIndex === -1 || !nextElement) {
-        this.handleSubmit(questions);
-        return;
-      }
-
-      // Radio / checkbox questions are wrapped in a div; focus their first input.
-      const focusTarget = nextElement.matches('input, select, textarea')
-        ? nextElement
-        : nextElement.querySelector<HTMLElement>('input');
-      (focusTarget ?? nextElement).focus();
+      this.handleContinue();
     });
 
     // Apply autocomplete="off" when the option is disabled.
@@ -228,21 +237,41 @@ export class ChatFormElement extends HTMLElement {
         });
       });
     }
+
+    // Move the cursor to the new question. Skipped for the very first render so
+    // the form does not grab focus (and scroll the page) when it loads.
+    if (autofocus) {
+      inputArea.querySelector<HTMLElement>('input, select, textarea')?.focus();
+    }
   }
 
-  /** Collects answers from the input area and advances the controller. */
-  private handleSubmit(questions: ChatQuestion[]): void {
+  /**
+   * Records the answer to the current question, then either asks the next
+   * question of the page or, after the last one, submits the whole page.
+   */
+  private handleContinue(): void {
     if (!this.controller || !this.renderer) return;
 
     const inputArea = this.renderer.getInputArea();
     if (!inputArea) return;
 
-    const answers: AnswerMap = this.collectAnswers(questions, inputArea);
+    const page = this.controller.getCurrentPage();
+    const stepQuestions = this.getStepQuestions();
+    const stepAnswers: AnswerMap = this.collectAnswers(stepQuestions, inputArea);
+    Object.assign(this.pageAnswers, stepAnswers);
 
-    // Move the answered questions into the chat history as question / answer
-    // pairs. The labels inside the active page are removed with the page.
-    for (const q of questions) {
-      const value = answers[q.id];
+    const hasMoreQuestions = this.questionIndex + 1 < this.pageQuestions.length;
+
+    // Keep the page title in the history once its first question is answered,
+    // because the title bubble is only shown on the first step.
+    if (hasMoreQuestions && this.questionIndex === 0 && page?.title) {
+      this.renderer.appendBotBubble(page.title);
+    }
+
+    // Move the answered question into the chat history as a question / answer
+    // pair. The label inside the active page is removed with the page.
+    for (const q of stepQuestions) {
+      const value = stepAnswers[q.id];
       if (value !== undefined) {
         const display = Array.isArray(value) ? value.join(', ') : value;
         this.renderer.appendBotBubble(q.title);
@@ -250,15 +279,21 @@ export class ChatFormElement extends HTMLElement {
       }
     }
 
-    // Remove the input area before submitting (so form:complete listeners
+    // Remove the input area before moving on (so form:complete listeners
     // see the DOM without an input area).
     this.renderer.clearInputArea();
 
-    this.controller.submitPage(answers);
+    if (hasMoreQuestions) {
+      this.questionIndex += 1;
+      this.renderQuestionStep(true);
+      return;
+    }
+
+    this.controller.submitPage(this.pageAnswers);
 
     // Advance to the next page if the form is not complete.
     if (this.controller.getCurrentPage()) {
-      this.renderCurrentPage();
+      this.renderCurrentPage(true);
     }
   }
 

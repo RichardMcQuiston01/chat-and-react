@@ -4,7 +4,7 @@ The form sends two events. Both are browser `CustomEvent`s that bubble up the pa
 
 ## `chat-page-submit`
 
-Fires each time a page is submitted. It does not fire when `userResumable` is `false`.
+Fires each time a page is submitted. A page's questions are asked one at a time, each with its own Continue button, so this event fires once, after the last question of the page is answered. It does not fire when `userResumable` is `false`.
 
 ```ts
 {

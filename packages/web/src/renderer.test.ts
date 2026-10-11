@@ -274,3 +274,17 @@ describe('Renderer — checkbox options declared under items.enum', () => {
     expect(Array.from(boxes).map((box) => box.value)).toEqual(['Technology', 'Science']);
   });
 });
+
+describe('Renderer — renderPage showTitle option', () => {
+  it('leaves out the title bubble when showTitle is false', () => {
+    const root = makeRoot();
+    const renderer = new Renderer(root);
+    const q = makeQuestion({ id: 'q1', 'x-chat-input': 'text' });
+    renderer.renderPage(makePage([q]), [q], { showTitle: false });
+
+    const labels = Array.from(root.querySelectorAll('.car-page .car-bubble')).map(
+      (bubble) => bubble.textContent,
+    );
+    expect(labels).toEqual(['q1']);
+  });
+});
