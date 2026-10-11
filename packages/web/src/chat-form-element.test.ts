@@ -88,7 +88,7 @@ describe('<chat-form>', () => {
     expect(events[0].detail.allAnswers).toEqual({ q1: 'Alice' });
   });
 
-  it('moves to the next question on Enter and submits from the last one', () => {
+  describe('a page with several questions', () => {
     const twoQuestionSchema = JSON.stringify({
       'x-chat-version': '1',
       'x-chat-pages': [{
@@ -101,21 +101,91 @@ describe('<chat-form>', () => {
         branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
       }],
     });
-    el = mount(twoQuestionSchema);
-    const shadow = getShadow(el);
-    const events: CustomEvent[] = [];
-    el.addEventListener('chat-form-complete', (e) => events.push(e as CustomEvent));
-    const [first, second] = Array.from(shadow.querySelectorAll('input')) as HTMLInputElement[];
-    first.value = 'one';
-    second.value = 'two';
 
-    first.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-    expect(events).toHaveLength(0);
-    expect(shadow.activeElement).toBe(second);
+    function activeLabels(shadow: ShadowRoot): (string | null)[] {
+      return Array.from(shadow.querySelectorAll('.car-page .car-bubble')).map((b) => b.textContent);
+    }
 
-    second.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-    expect(events).toHaveLength(1);
-    expect(events[0].detail.allAnswers).toEqual({ q1: 'one', q2: 'two' });
+    function press(shadow: ShadowRoot, key: 'click' | 'Enter'): void {
+      if (key === 'click') {
+        shadow.querySelector('[part="submit-btn"]')!.dispatchEvent(new Event('click'));
+        return;
+      }
+      (shadow.querySelector('input') as HTMLInputElement).dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+      );
+    }
+
+    it('asks one question at a time, each with its own Continue button', () => {
+      el = mount(twoQuestionSchema);
+      const shadow = getShadow(el);
+      expect(activeLabels(shadow)).toEqual(['Page One', 'First?']);
+      expect(shadow.querySelectorAll('[part="submit-btn"]')).toHaveLength(1);
+
+      (shadow.querySelector('input') as HTMLInputElement).value = 'one';
+      press(shadow, 'click');
+
+      expect(activeLabels(shadow)).toEqual(['Second?']);
+      expect(shadow.querySelectorAll('[part="submit-btn"]')).toHaveLength(1);
+    });
+
+    it('fires chat-page-submit once, after the last question, with every answer', () => {
+      el = mount(twoQuestionSchema);
+      const shadow = getShadow(el);
+      const pageEvents: CustomEvent[] = [];
+      const completeEvents: CustomEvent[] = [];
+      el.addEventListener('chat-page-submit', (e) => pageEvents.push(e as CustomEvent));
+      el.addEventListener('chat-form-complete', (e) => completeEvents.push(e as CustomEvent));
+
+      (shadow.querySelector('input') as HTMLInputElement).value = 'one';
+      press(shadow, 'click');
+      expect(pageEvents).toHaveLength(0);
+
+      (shadow.querySelector('input') as HTMLInputElement).value = 'two';
+      press(shadow, 'click');
+      expect(pageEvents).toHaveLength(1);
+      expect(pageEvents[0].detail.answers).toEqual({ q1: 'one', q2: 'two' });
+      expect(completeEvents).toHaveLength(1);
+    });
+
+    it('treats Enter like Continue on each question', () => {
+      el = mount(twoQuestionSchema);
+      const shadow = getShadow(el);
+      const completeEvents: CustomEvent[] = [];
+      el.addEventListener('chat-form-complete', (e) => completeEvents.push(e as CustomEvent));
+
+      (shadow.querySelector('input') as HTMLInputElement).value = 'one';
+      press(shadow, 'Enter');
+      expect(activeLabels(shadow)).toEqual(['Second?']);
+      expect(completeEvents).toHaveLength(0);
+
+      (shadow.querySelector('input') as HTMLInputElement).value = 'two';
+      press(shadow, 'Enter');
+      expect(completeEvents).toHaveLength(1);
+      expect(completeEvents[0].detail.allAnswers).toEqual({ q1: 'one', q2: 'two' });
+    });
+
+    it('keeps the page title and each answered question in the history, in order', () => {
+      el = mount(twoQuestionSchema);
+      const shadow = getShadow(el);
+      (shadow.querySelector('input') as HTMLInputElement).value = 'one';
+      press(shadow, 'click');
+      (shadow.querySelector('input') as HTMLInputElement).value = 'two';
+      press(shadow, 'click');
+
+      const history = Array.from(
+        shadow.querySelectorAll('[part="bubble-bot"], [part="bubble-user"]'),
+      ).map((b) => b.textContent);
+      expect(history).toEqual(['Page One', 'First?', 'one', 'Second?', 'two']);
+    });
+
+    it('moves focus to the new question after Continue', () => {
+      el = mount(twoQuestionSchema);
+      const shadow = getShadow(el);
+      (shadow.querySelector('input') as HTMLInputElement).value = 'one';
+      press(shadow, 'click');
+      expect(shadow.activeElement).toBe(shadow.querySelector('input'));
+    });
   });
 
   it('keeps each answered question and its answer in the history, in order', () => {

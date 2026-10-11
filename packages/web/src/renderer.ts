@@ -27,10 +27,16 @@ export class Renderer {
    * Creates a `.car-page` container holding the page title bubble, the input
    * wrap (one `.car-bubble` label followed by its input for each visible
    * question), and the submit button.
+   * Pass `showTitle: false` to leave the title bubble out, for the later steps
+   * of a page whose questions are asked one at a time.
    * The page container is tracked as the active input area and is removed by
    * the next call to `clearInputArea` or `renderPage`.
    */
-  renderPage(page: ChatPage, visibleQuestions: ChatQuestion[]): void {
+  renderPage(
+    page: ChatPage,
+    visibleQuestions: ChatQuestion[],
+    options: { showTitle?: boolean } = {},
+  ): void {
     this.clearInputArea();
     const doc = this.root.ownerDocument;
 
@@ -38,7 +44,7 @@ export class Renderer {
     pageDiv.className = 'car-page';
     pageDiv.setAttribute('part', 'input-area');
 
-    if (page.title) {
+    if (page.title && options.showTitle !== false) {
       const titleBubble = doc.createElement('div');
       titleBubble.className = 'car-bubble';
       titleBubble.textContent = page.title;

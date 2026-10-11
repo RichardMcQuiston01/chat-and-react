@@ -8,12 +8,16 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- `<chat-form>` asks the questions of a page one at a time, each with its own Continue button. `chat-page-submit` still fires once per page, after the last question is answered, with every answer from that page
+- Pressing Enter in a single-line input acts like Continue
+
 ### Fixed
 
 - `<chat-form>` no longer shows each question twice. Questions now appear once, directly above their own input, and move into the chat history as question / answer pairs when a page is submitted
 - Radio buttons and checkboxes sit next to their labels instead of stretching across the full width
 - Checkbox questions that declare their choices under `items.enum` now render their options
-- Pressing Enter in a single-line input moves to the next question, and submits the page from the last one
 - Demo: the form renders on load, the "Form complete!" banner stays hidden until the form is done, and "Start over" keeps the event log working
 
 ---
