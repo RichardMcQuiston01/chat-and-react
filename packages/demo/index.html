@@ -72,6 +72,8 @@
         overflow: hidden;
       }
 
+      #complete-banner[hidden] { display: none; }
+
       #complete-banner {
         margin-top: 1rem;
         background: #d1fae5;
@@ -159,9 +161,8 @@
       <span class="badge">demo</span>
     </header>
     <main>
-      <section class="chat-panel">
+      <section class="chat-panel" id="chat-panel">
         <h2>Chat Form</h2>
-        <chat-form id="chat"></chat-form>
         <div id="complete-banner" hidden>
           <span>Form complete! All answers logged in the panel →</span>
           <button id="reset-btn">Start over</button>

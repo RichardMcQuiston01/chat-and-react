@@ -24,8 +24,9 @@ export class Renderer {
   /**
    * Render a page's questions as bot bubbles + input widgets.
    *
-   * Creates a `.car-page` container holding the page title bubble, one
-   * `.car-bubble` per visible question, the input wrap, and the submit button.
+   * Creates a `.car-page` container holding the page title bubble, the input
+   * wrap (one `.car-bubble` label followed by its input for each visible
+   * question), and the submit button.
    * The page container is tracked as the active input area and is removed by
    * the next call to `clearInputArea` or `renderPage`.
    */
@@ -49,13 +50,13 @@ export class Renderer {
     inputWrap.setAttribute('part', 'input-wrap');
 
     for (const q of visibleQuestions) {
-      // Label bubble inside the page (carries class, no part attribute so that
-      // persistent bubbles appended via appendBotBubble are the canonical
-      // source for [part="bubble-bot"] queries).
+      // Label bubble sits directly above its own input. It carries no `part`
+      // attribute: [part="bubble-bot"] is reserved for the persistent bubbles
+      // appended via appendBotBubble once a page has been answered.
       const label = doc.createElement('div');
       label.className = 'car-bubble';
       label.textContent = q.title;
-      pageDiv.appendChild(label);
+      inputWrap.appendChild(label);
 
       const el = this.buildInput(q);
       el.dataset['questionId'] = q.id;
@@ -76,7 +77,7 @@ export class Renderer {
 
   /**
    * Append a persistent bot-side chat bubble to the message list.
-   * Unlike the label bubbles inside a page, this bubble survives
+   * Unlike the label bubbles inside an active page, this bubble survives
    * calls to `clearInputArea` / `renderPage`.
    */
   appendBotBubble(text: string): void {
@@ -113,7 +114,8 @@ export class Renderer {
     const doc = this.root.ownerDocument;
     const type = q['x-chat-input'];
     const placeholder = (q['x-chat-placeholder'] as string | undefined) ?? '';
-    const options = (q.enum as string[] | undefined) ?? [];
+    // Array questions (checkbox) declare their choices under `items.enum`.
+    const options = q.enum ?? q.items?.enum ?? [];
 
     if (type === 'textarea') {
       const el = doc.createElement('textarea');
@@ -142,6 +144,7 @@ export class Renderer {
       wrap.setAttribute('part', 'input-wrap');
       for (const opt of options) {
         const lbl = doc.createElement('label');
+        lbl.className = 'car-option';
         const inp = doc.createElement('input');
         inp.type = type === 'radio' ? 'radio' : 'checkbox';
         inp.name = q.id;
