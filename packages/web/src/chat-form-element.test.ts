@@ -88,6 +88,36 @@ describe('<chat-form>', () => {
     expect(events[0].detail.allAnswers).toEqual({ q1: 'Alice' });
   });
 
+  it('moves to the next question on Enter and submits from the last one', () => {
+    const twoQuestionSchema = JSON.stringify({
+      'x-chat-version': '1',
+      'x-chat-pages': [{
+        id: 'p1',
+        title: 'Page One',
+        questions: [
+          { id: 'q1', type: 'string', 'x-chat-input': 'text', title: 'First?' },
+          { id: 'q2', type: 'string', 'x-chat-input': 'text', title: 'Second?' },
+        ],
+        branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
+      }],
+    });
+    el = mount(twoQuestionSchema);
+    const shadow = getShadow(el);
+    const events: CustomEvent[] = [];
+    el.addEventListener('chat-form-complete', (e) => events.push(e as CustomEvent));
+    const [first, second] = Array.from(shadow.querySelectorAll('input')) as HTMLInputElement[];
+    first.value = 'one';
+    second.value = 'two';
+
+    first.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(events).toHaveLength(0);
+    expect(shadow.activeElement).toBe(second);
+
+    second.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(events).toHaveLength(1);
+    expect(events[0].detail.allAnswers).toEqual({ q1: 'one', q2: 'two' });
+  });
+
   it('keeps each answered question and its answer in the history, in order', () => {
     el = mount(minimalSchema);
     const shadow = getShadow(el);
