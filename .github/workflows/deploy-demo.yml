@@ -8,6 +8,7 @@ on:
       - "packages/web/**"
       - "packages/demo/**"
       - "bun.lock"
+      - "biome.json"
       - ".github/workflows/deploy-demo.yml"
   workflow_dispatch:
 
@@ -31,6 +32,9 @@ jobs:
           bun-version: 1.x
 
       - run: bun install --frozen-lockfile
+
+      # Fail the deploy on lint or formatting errors (warnings are allowed)
+      - run: bun run lint
 
       # Build in dependency order: core → web → demo
       - run: bun run build
