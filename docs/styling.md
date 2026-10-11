@@ -34,6 +34,12 @@ chat-form::part(input) {
 chat-form::part(submit-btn) {
   /* submit button */
 }
+chat-form::part(btn-icon) {
+  /* icon inside the submit button */
+}
+chat-form::part(edit-btn) {
+  /* Edit icon on an answer */
+}
 ```
 
 ## CSS class reference

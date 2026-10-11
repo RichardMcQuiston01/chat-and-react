@@ -68,6 +68,11 @@ export function getStyles(): string {
   gap: 8px;
 }
 
+.car-btn-icon {
+  display: inline-flex;
+  align-items: center;
+}
+
 .car-option-number {
   display: inline-flex;
   align-items: center;
@@ -108,13 +113,74 @@ export function getStyles(): string {
   .car-bubble--fading {
     transition: none;
   }
+
+  .car-dots span {
+    animation: none;
+    opacity: 0.6;
+  }
 }
 
 .car-input:focus {
   border-color: var(--car-accent);
 }
 
+.car-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.car-untyped {
+  visibility: hidden;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.car-bubble--thinking {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.5em;
+}
+
+.car-dots span {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin: 0 2px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.3;
+  animation: car-dot-blink 1.2s infinite ease-in-out;
+}
+
+.car-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.car-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes car-dot-blink {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
 .car-btn-submit {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   background: var(--car-accent);
   color: #ffffff;
   border: none;

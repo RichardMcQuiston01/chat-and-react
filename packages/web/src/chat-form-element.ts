@@ -1,7 +1,13 @@
 import { ChatController, SessionManager } from '@richardmcquiston01/chat-and-react-core';
-import type { ChatQuestion, ChatEvent, AnswerMap } from '@richardmcquiston01/chat-and-react-core';
+import type {
+  ChatQuestion,
+  ChatEvent,
+  AnswerMap,
+  ChatOptions,
+} from '@richardmcquiston01/chat-and-react-core';
 import { AdapterRegistry } from './adapter-registry.js';
 import { Renderer } from './renderer.js';
+import type { ThinkingConfig } from './renderer.js';
 import { getStyles } from './styles.js';
 
 /**
@@ -111,6 +117,10 @@ export class ChatFormElement extends HTMLElement {
 
   private allowEdit = false;
   private autoHideMs = 0;
+  private typingSpeed = 0;
+  private thinkingDelay = 0;
+  private thinkingText = '';
+  private showContinueIcon = true;
   private readonly hideTimers = new Set<number>();
 
   connectedCallback(): void {
@@ -128,6 +138,7 @@ export class ChatFormElement extends HTMLElement {
   disconnectedCallback(): void {
     this.hideTimers.forEach((timerId) => window.clearTimeout(timerId));
     this.hideTimers.clear();
+    this.renderer?.cancelAnimations();
     this.controller?.destroy();
     this.controller = null;
     this.session = null;
@@ -163,6 +174,7 @@ export class ChatFormElement extends HTMLElement {
         inputAdapter: this.registry.getInputAdapter(),
         outputAdapter: this.registry.getOutputAdapter(),
         errorAdapter: this.registry.getErrorAdapter(),
+        options: this.readOptionOverrides(),
       },
       this.session,
     );
@@ -198,19 +210,69 @@ export class ChatFormElement extends HTMLElement {
   }
 
   /**
-   * Reads the allowEdit and autoHideQuestions options. Element attributes
-   * (`allow-edit`, `auto-hide-questions`) take precedence over the schema.
+   * Reads option overrides from the element's attributes. An attribute wins over
+   * the same option in the schema. Attributes are read once, when the element is
+   * connected.
    */
+  private readOptionOverrides(): Partial<ChatOptions> {
+    const overrides: Partial<ChatOptions> = {};
+
+    const flag = (name: string): boolean | undefined => {
+      const value = this.getAttribute(name);
+      if (value === null) return undefined;
+      return !['false', '0', 'off', 'no'].includes(value.trim().toLowerCase());
+    };
+    const milliseconds = (name: string): number | undefined => {
+      const value = this.getAttribute(name);
+      if (value === null || value.trim() === '') return undefined;
+      const parsed = Number(value);
+      return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
+    };
+
+    const set = <K extends keyof ChatOptions>(key: K, value: ChatOptions[K] | undefined): void => {
+      if (value !== undefined) overrides[key] = value;
+    };
+
+    set('userResumable', flag('user-resumable'));
+    set('localStorage', flag('local-storage'));
+    set('autoComplete', flag('auto-complete'));
+    set('allowEdit', flag('allow-edit'));
+    set('showContinueIcon', flag('show-continue-icon'));
+    set('autoHideQuestions', milliseconds('auto-hide-questions'));
+    set('typingSpeed', milliseconds('typing-speed'));
+    set('thinkingDelay', milliseconds('thinking-delay'));
+    set('thinkingText', this.getAttribute('thinking-text') ?? undefined);
+    return overrides;
+  }
+
+  /** Copies the resolved options (schema, defaults, then attributes) the element itself uses. */
   private resolveOptions(): void {
     if (!this.controller) return;
     const options = this.controller.getOptions();
+    this.allowEdit = options.allowEdit;
+    this.autoHideMs = options.autoHideQuestions;
+    this.typingSpeed = options.typingSpeed;
+    this.thinkingDelay = options.thinkingDelay;
+    this.thinkingText = options.thinkingText;
+    this.showContinueIcon = options.showContinueIcon;
+  }
 
-    const allowEditAttr = this.getAttribute('allow-edit');
-    this.allowEdit = allowEditAttr === null ? options.allowEdit : allowEditAttr !== 'false';
+  /**
+   * Works out the thinking bubble for a question. A question's own
+   * `x-chat-thinking` wins over the `thinkingDelay` / `thinkingText` options.
+   */
+  private resolveThinking(question: ChatQuestion | undefined): ThinkingConfig | null {
+    const own = question?.['x-chat-thinking'];
+    let delay = this.thinkingDelay;
+    let text = this.thinkingText || undefined;
 
-    const hideAttr = this.getAttribute('auto-hide-questions');
-    const hideFromAttr = hideAttr === null ? NaN : Number(hideAttr);
-    this.autoHideMs = Number.isFinite(hideFromAttr) ? hideFromAttr : options.autoHideQuestions;
+    if (typeof own === 'number') {
+      delay = own;
+    } else if (own && typeof own === 'object') {
+      if (own.delay !== undefined) delay = own.delay;
+      if (own.text !== undefined) text = own.text || undefined;
+    }
+    return delay > 0 ? { delay, text } : null;
   }
 
   /**
@@ -242,14 +304,21 @@ export class ChatFormElement extends HTMLElement {
   }
 
   /** Renders the current step of the current page: one question and its Continue button. */
-  private renderQuestionStep(autofocus: boolean): void {
+  private renderQuestionStep(autofocus: boolean, animate = true): void {
     if (!this.controller || !this.renderer) return;
     const page = this.controller.getCurrentPage();
     if (!page) return;
 
-    this.renderer.renderPage(page, this.getStepQuestions(), {
+    const stepQuestions = this.getStepQuestions();
+    this.renderer.renderPage(page, stepQuestions, {
       showTitle: this.questionIndex === 0,
       values: this.pageAnswers,
+      showContinueIcon: this.showContinueIcon,
+      // Revisited questions (edits) appear straight away; only new ones are
+      // "thought about" and "typed".
+      typingSpeed: animate ? this.typingSpeed : 0,
+      thinking: animate ? this.resolveThinking(stepQuestions[0]) : null,
+      onReady: () => this.focusCurrentQuestion(autofocus),
     });
 
     const inputArea = this.renderer.getInputArea();
@@ -261,17 +330,22 @@ export class ChatFormElement extends HTMLElement {
       btn.addEventListener('click', () => this.handleContinue());
     }
 
-    // Keyboard shortcuts. Enter in a single-line input or dropdown acts like Continue, and
-    // the number keys pick the numbered radio / checkbox options. Textareas keep
-    // Enter for new lines, and buttons already act on Enter.
+    // Keyboard shortcuts. Enter acts like Continue (Shift+Enter adds a line in a textarea), and
+    // the number keys pick the numbered radio / checkbox options. Buttons already
+    // act on Enter.
     inputArea.addEventListener('keydown', (event: Event) => {
       const keyEvent = event as KeyboardEvent;
       const target = keyEvent.target;
 
-      if (
-        keyEvent.key === 'Enter' &&
-        (target instanceof HTMLInputElement || target instanceof HTMLSelectElement)
-      ) {
+      // Enter continues from a single-line input, a dropdown, or a textarea.
+      // Shift+Enter in a textarea still adds a new line, and Enter while an
+      // input method editor is composing text is left alone.
+      const isEnterTarget =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLSelectElement ||
+        target instanceof HTMLTextAreaElement;
+      if (keyEvent.key === 'Enter' && isEnterTarget && !keyEvent.isComposing) {
+        if (target instanceof HTMLTextAreaElement && keyEvent.shiftKey) return;
         keyEvent.preventDefault();
         this.handleContinue();
         return;
@@ -309,14 +383,24 @@ export class ChatFormElement extends HTMLElement {
       });
     }
 
-    // Move the cursor to the new question. Skipped for the very first render so
-    // the form does not grab focus (and scroll the page) when it loads.
+    // Keep the new question on screen while it is thought about and typed.
     if (autofocus) {
-      inputArea.querySelector<HTMLElement>('input, select, textarea')?.focus();
-      // Keep the Continue button on screen as the chat history grows. Optional
-      // call: some DOM environments do not implement scrollIntoView.
-      btn?.scrollIntoView?.({ block: 'nearest' });
+      inputArea.scrollIntoView?.({ block: 'nearest' });
     }
+  }
+
+  /**
+   * Moves the cursor to the question on screen and keeps its Continue button in
+   * view. Skipped for the very first render so the form does not grab focus (and
+   * scroll the page) when it loads.
+   */
+  private focusCurrentQuestion(autofocus: boolean): void {
+    if (!autofocus) return;
+    const inputArea = this.renderer?.getInputArea();
+    if (!inputArea) return;
+    inputArea.querySelector<HTMLElement>('input, select, textarea')?.focus();
+    // Optional call: some DOM environments do not implement scrollIntoView.
+    inputArea.querySelector<HTMLElement>('.car-btn-submit')?.scrollIntoView?.({ block: 'nearest' });
   }
 
   /** True for controls where typing a character should be left alone. */
@@ -389,7 +473,8 @@ export class ChatFormElement extends HTMLElement {
 
     if (hasMoreQuestions) {
       this.questionIndex += 1;
-      this.renderQuestionStep(true);
+      // Questions asked again while editing appear straight away.
+      this.renderQuestionStep(true, this.editingRouteIndex === null);
       return;
     }
 
@@ -430,7 +515,7 @@ export class ChatFormElement extends HTMLElement {
       if (index < 0) return;
       this.renderer.clearInputArea();
       this.questionIndex = index;
-      this.renderQuestionStep(true);
+      this.renderQuestionStep(true, false);
       return;
     }
 
@@ -460,7 +545,7 @@ export class ChatFormElement extends HTMLElement {
       0,
       this.pageQuestions.findIndex((q) => q.id === questionId),
     );
-    this.renderQuestionStep(true);
+    this.renderQuestionStep(true, false);
   }
 
   /**
@@ -488,7 +573,7 @@ export class ChatFormElement extends HTMLElement {
       this.pageAnswers = suspended.pageAnswers;
       this.pageTitleLogged = suspended.pageTitleLogged;
       this.pendingRouteIndex = suspended.pendingRouteIndex;
-      this.renderQuestionStep(true);
+      this.renderQuestionStep(true, false);
       return;
     }
 

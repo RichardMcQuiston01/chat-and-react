@@ -27,7 +27,18 @@ const DEFAULT_OPTIONS: ChatOptions = {
   autoComplete: true,
   allowEdit: false,
   autoHideQuestions: 0,
+  typingSpeed: 0,
+  thinkingDelay: 0,
+  thinkingText: '',
+  showContinueIcon: true,
 };
+
+/** Copies an object without its undefined values, so they cannot hide a default. */
+function stripUndefined<T extends object>(source: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(source).filter(([, value]) => value !== undefined),
+  ) as Partial<T>;
+}
 
 /**
  * Central orchestrator for the chat-and-react form flow.
@@ -60,6 +71,7 @@ export class ChatController {
       outputAdapter: config.outputAdapter ?? new BrowserEventAdapter(),
       errorAdapter: config.errorAdapter ?? new ConsoleErrorAdapter(),
       schema: config.schema,
+      options: config.options ?? {},
     };
     this.session = sessionManager ?? new SessionManager();
   }
@@ -89,13 +101,13 @@ export class ChatController {
       });
     }
 
+    // Defaults, then the schema, then overrides passed in by the host (for
+    // example element attributes).
     const schemaOpts = this.schema!['x-chat-options'] ?? {};
     this.options = {
-      userResumable: schemaOpts.userResumable ?? DEFAULT_OPTIONS.userResumable,
-      localStorage: schemaOpts.localStorage ?? DEFAULT_OPTIONS.localStorage,
-      autoComplete: schemaOpts.autoComplete ?? DEFAULT_OPTIONS.autoComplete,
-      allowEdit: schemaOpts.allowEdit ?? DEFAULT_OPTIONS.allowEdit,
-      autoHideQuestions: schemaOpts.autoHideQuestions ?? DEFAULT_OPTIONS.autoHideQuestions,
+      ...DEFAULT_OPTIONS,
+      ...stripUndefined(schemaOpts),
+      ...stripUndefined(this.config.options),
     };
 
     if (this.options.userResumable) {

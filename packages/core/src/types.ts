@@ -15,6 +15,13 @@ export interface ChatQuestion {
   title: string;
   'x-chat-placeholder'?: string;
   'x-chat-condition'?: JsonLogicRule | ChatConditionRef;
+  /**
+   * Shows a "thinking" bubble before this question appears, so the conversation
+   * feels less abrupt. A number is the delay in milliseconds (0 turns it off for
+   * this question). An object can also set the text shown instead of the dots.
+   * Overrides the `thinkingDelay` and `thinkingText` options.
+   */
+  'x-chat-thinking'?: number | { delay?: number; text?: string };
   enum?: string[];
   items?: { enum: string[] };
 }
@@ -48,6 +55,14 @@ export interface ChatOptions {
   allowEdit: boolean;
   /** Milliseconds to wait before hiding an answered question bubble. 0 keeps them visible. */
   autoHideQuestions: number;
+  /** Milliseconds per character when question text is "typed" onto the screen. 0 shows it at once. */
+  typingSpeed: number;
+  /** Milliseconds to show a "thinking" bubble before each question. 0 turns it off. */
+  thinkingDelay: number;
+  /** Text for the thinking bubble. Empty shows animated dots. */
+  thinkingText: string;
+  /** Show an icon on the Continue button. */
+  showContinueIcon: boolean;
 }
 
 export interface ChatSchema {
@@ -121,4 +136,9 @@ export interface ChatControllerConfig {
   inputAdapter?: InputAdapter;
   outputAdapter?: OutputAdapter;
   errorAdapter?: ErrorLogAdapter;
+  /**
+   * Option values that win over the schema's `x-chat-options`, for example ones
+   * read from element attributes.
+   */
+  options?: Partial<ChatOptions>;
 }

@@ -67,6 +67,19 @@ Sometimes you only want to show a question in certain cases. Add `x-chat-conditi
 
 This question only shows if the user answered `initial_answer`.
 
+## Thinking before a question
+
+Add `x-chat-thinking` to a question to show a "thinking" bubble before it appears. See [Options](options.md#thinking-bubble).
+
+```json
+{
+  "id": "feedback",
+  "x-chat-input": "textarea",
+  "title": "Any final comments?",
+  "x-chat-thinking": 1200
+}
+```
+
 ## Input types
 
 Set `x-chat-input` to one of these:
