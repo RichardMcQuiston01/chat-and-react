@@ -258,3 +258,19 @@ describe('Renderer — second renderPage clears first', () => {
     expect(titleBubble?.textContent).toBe('Page Two');
   });
 });
+
+describe('Renderer — checkbox options declared under items.enum', () => {
+  it('renders one checkbox per entry in items.enum', () => {
+    const root = makeRoot();
+    const renderer = new Renderer(root);
+    const q = makeQuestion({
+      id: 'interests',
+      'x-chat-input': 'checkbox',
+      items: { enum: ['Technology', 'Science'] },
+    });
+    renderer.renderPage(makePage([q]), [q]);
+
+    const boxes = root.querySelectorAll<HTMLInputElement>('input[type="checkbox"]');
+    expect(Array.from(boxes).map((box) => box.value)).toEqual(['Technology', 'Science']);
+  });
+});

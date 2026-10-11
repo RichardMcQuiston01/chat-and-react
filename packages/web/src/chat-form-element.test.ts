@@ -48,11 +48,15 @@ describe('<chat-form>', () => {
     el?.remove();
   });
 
-  it('renders a bot bubble for the first question on connect', () => {
+  it('renders the first question once, inside the input area, on connect', () => {
     el = mount(minimalSchema);
-    const bubble = getShadow(el).querySelector('[part="bubble-bot"]');
-    expect(bubble).not.toBeNull();
-    expect(bubble?.textContent).toBe('What is your name?');
+    const shadow = getShadow(el);
+    const labels = Array.from(shadow.querySelectorAll('.car-bubble')).filter(
+      (b) => b.textContent === 'What is your name?',
+    );
+    expect(labels).toHaveLength(1);
+    expect(shadow.querySelector('[part="input-area"]')?.contains(labels[0])).toBe(true);
+    expect(shadow.querySelector('[part="bubble-bot"]')).toBeNull();
   });
 
   it('renders an input-area with a submit button', () => {
@@ -70,6 +74,29 @@ describe('<chat-form>', () => {
     const userBubble = shadow.querySelector('[part="bubble-user"]');
     expect(userBubble?.textContent).toBe('Alice');
     expect(shadow.querySelector('[part="input-area"]')).toBeNull();
+  });
+
+  it('submits the page when Enter is pressed in a text input', () => {
+    el = mount(minimalSchema);
+    const shadow = getShadow(el);
+    const events: CustomEvent[] = [];
+    el.addEventListener('chat-form-complete', (e) => events.push(e as CustomEvent));
+    const input = shadow.querySelector('input') as HTMLInputElement;
+    input.value = 'Alice';
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(events).toHaveLength(1);
+    expect(events[0].detail.allAnswers).toEqual({ q1: 'Alice' });
+  });
+
+  it('keeps each answered question and its answer in the history, in order', () => {
+    el = mount(minimalSchema);
+    const shadow = getShadow(el);
+    (shadow.querySelector('input') as HTMLInputElement).value = 'Alice';
+    shadow.querySelector('[part="submit-btn"]')!.dispatchEvent(new Event('click'));
+    const history = Array.from(
+      shadow.querySelectorAll('[part="bubble-bot"], [part="bubble-user"]'),
+    ).map((b) => b.textContent);
+    expect(history).toEqual(['What is your name?', 'Alice']);
   });
 
   it('fires chat-form-complete after final answer on single-page form', () => {
@@ -101,9 +128,14 @@ describe('<chat-form>', () => {
     const radio = shadow.querySelector('input[value="A"]') as HTMLInputElement;
     radio.checked = true;
     shadow.querySelector('[part="submit-btn"]')!.dispatchEvent(new Event('click'));
-    const bubbles = shadow.querySelectorAll('[part="bubble-bot"]');
-    expect(bubbles.length).toBeGreaterThanOrEqual(2);
-    expect(bubbles[1].textContent).toBe('Tell us more');
+    const history = Array.from(
+      shadow.querySelectorAll('[part="bubble-bot"], [part="bubble-user"]'),
+    ).map((b) => b.textContent);
+    expect(history).toEqual(['Pick?', 'A']);
+    const labels = Array.from(shadow.querySelectorAll('.car-page .car-bubble')).map(
+      (b) => b.textContent,
+    );
+    expect(labels).toContain('Tell us more');
   });
 
   it('dispatches chat-error for invalid schema JSON', () => {
@@ -121,7 +153,6 @@ describe('<chat-form>', () => {
     const shadow = getShadow(el);
     expect(shadow.querySelector('[part="container"]')).not.toBeNull();
     expect(shadow.querySelector('[part="message-list"]')).not.toBeNull();
-    expect(shadow.querySelector('[part="bubble-bot"]')).not.toBeNull();
     expect(shadow.querySelector('[part="input-area"]')).not.toBeNull();
   });
 });

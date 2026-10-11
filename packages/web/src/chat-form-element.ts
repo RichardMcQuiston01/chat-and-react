@@ -168,13 +168,6 @@ export class ChatFormElement extends HTMLElement {
 
     const questions = this.controller.getVisibleQuestions();
 
-    // Append persistent bot bubbles for each question label so they survive
-    // page transitions (renderer.renderPage also creates label bubbles inside
-    // .car-page, but those are removed when the page is cleared).
-    for (const q of questions) {
-      this.renderer.appendBotBubble(q.title);
-    }
-
     this.renderer.renderPage(page, questions);
 
     const inputArea = this.renderer.getInputArea();
@@ -185,6 +178,16 @@ export class ChatFormElement extends HTMLElement {
     if (btn) {
       btn.addEventListener('click', () => this.handleSubmit(questions));
     }
+
+    // Pressing Enter in a single-line input submits the page, like Continue.
+    // Textareas keep Enter for new lines, and buttons already act on Enter.
+    inputArea.addEventListener('keydown', (event: Event) => {
+      const keyEvent = event as KeyboardEvent;
+      const target = keyEvent.target;
+      if (keyEvent.key !== 'Enter' || !(target instanceof HTMLInputElement)) return;
+      keyEvent.preventDefault();
+      this.handleSubmit(questions);
+    });
 
     // Apply autocomplete="off" when the option is disabled.
     if (this.controller && !this.controller.getOptions().autoComplete) {
@@ -220,11 +223,13 @@ export class ChatFormElement extends HTMLElement {
 
     const answers: AnswerMap = this.collectAnswers(questions, inputArea);
 
-    // Show user bubbles summarising each answer.
+    // Move the answered questions into the chat history as question / answer
+    // pairs. The labels inside the active page are removed with the page.
     for (const q of questions) {
       const value = answers[q.id];
       if (value !== undefined) {
         const display = Array.isArray(value) ? value.join(', ') : value;
+        this.renderer.appendBotBubble(q.title);
         this.renderer.appendUserBubble(display);
       }
     }

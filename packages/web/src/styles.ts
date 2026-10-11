@@ -56,6 +56,18 @@ export function getStyles(): string {
   box-sizing: border-box;
 }
 
+.car-input[type="radio"],
+.car-input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}
+
+.car-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .car-input:focus {
   border-color: var(--car-accent);
 }
