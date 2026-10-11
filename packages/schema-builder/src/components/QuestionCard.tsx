@@ -1,4 +1,4 @@
-import type { ChatQuestion, ChatInputType } from '@richardmcquiston01/chat-and-react-core';
+import type { ChatInputType, ChatQuestion } from '@richardmcquiston01/chat-and-react-core';
 import type { BuilderAction } from '../reducer.js';
 import { buildThinking, readThinking } from '../schema-helpers.js';
 
@@ -47,17 +47,14 @@ export function QuestionCard({
     }
   }
 
-  const conditionMode =
-    !question['x-chat-condition']
-      ? 'none'
-      : 'ref' in (question['x-chat-condition'] as object)
-        ? 'ref'
-        : 'none';
+  const conditionMode = !question['x-chat-condition']
+    ? 'none'
+    : 'ref' in (question['x-chat-condition'] as object)
+      ? 'ref'
+      : 'none';
 
   const optionValues: string[] =
-    question['x-chat-input'] === 'checkbox'
-      ? (question.items?.enum ?? [])
-      : (question.enum ?? []);
+    question['x-chat-input'] === 'checkbox' ? (question.items?.enum ?? []) : (question.enum ?? []);
 
   function setOptions(values: string[]) {
     if (question['x-chat-input'] === 'checkbox') {
@@ -67,8 +64,12 @@ export function QuestionCard({
     }
   }
 
-  function addOption() { setOptions([...optionValues, '']); }
-  function removeOption(i: number) { setOptions(optionValues.filter((_, idx) => idx !== i)); }
+  function addOption() {
+    setOptions([...optionValues, '']);
+  }
+  function removeOption(i: number) {
+    setOptions(optionValues.filter((_, idx) => idx !== i));
+  }
   function updateOption(i: number, val: string) {
     setOptions(optionValues.map((v, idx) => (idx === i ? val : v)));
   }
@@ -102,32 +103,53 @@ export function QuestionCard({
             onChange={(e) => handleInputTypeChange(e.target.value as ChatInputType)}
           >
             {INPUT_TYPES.map((t) => (
-              <option key={t} value={t}>{t}</option>
+              <option key={t} value={t}>
+                {t}
+              </option>
             ))}
           </select>
         </div>
         <div className="card-actions">
           <button
+            type="button"
             className="btn-icon"
             title="Move up"
             disabled={questionIndex === 0}
             onClick={() =>
-              dispatch({ type: 'MOVE_QUESTION', pageIndex, from: questionIndex, to: questionIndex - 1 })
+              dispatch({
+                type: 'MOVE_QUESTION',
+                pageIndex,
+                from: questionIndex,
+                to: questionIndex - 1,
+              })
             }
-          >↑</button>
+          >
+            ↑
+          </button>
           <button
+            type="button"
             className="btn-icon"
             title="Move down"
             disabled={questionIndex === questionCount - 1}
             onClick={() =>
-              dispatch({ type: 'MOVE_QUESTION', pageIndex, from: questionIndex, to: questionIndex + 1 })
+              dispatch({
+                type: 'MOVE_QUESTION',
+                pageIndex,
+                from: questionIndex,
+                to: questionIndex + 1,
+              })
             }
-          >↓</button>
+          >
+            ↓
+          </button>
           <button
+            type="button"
             className="btn-icon btn-icon--danger"
             title="Remove question"
             onClick={() => dispatch({ type: 'REMOVE_QUESTION', pageIndex, questionIndex })}
-          >×</button>
+          >
+            ×
+          </button>
         </div>
       </div>
 
@@ -164,10 +186,18 @@ export function QuestionCard({
                 onChange={(e) => updateOption(i, e.target.value)}
                 placeholder={`Option ${i + 1}`}
               />
-              <button className="btn-icon btn-icon--danger" onClick={() => removeOption(i)}>×</button>
+              <button
+                type="button"
+                className="btn-icon btn-icon--danger"
+                onClick={() => removeOption(i)}
+              >
+                ×
+              </button>
             </div>
           ))}
-          <button className="btn btn-ghost btn-sm" onClick={addOption}>+ Add option</button>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={addOption}>
+            + Add option
+          </button>
         </div>
       )}
 
@@ -210,7 +240,9 @@ export function QuestionCard({
           >
             <option value="">— select rule —</option>
             {ruleNames.map((name) => (
-              <option key={name} value={name}>{name}</option>
+              <option key={name} value={name}>
+                {name}
+              </option>
             ))}
           </select>
         )}

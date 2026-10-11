@@ -1,4 +1,4 @@
-import type { OutputAdapter, ChatEvent } from '@richardmcquiston01/chat-and-react-core';
+import type { ChatEvent, OutputAdapter } from '@richardmcquiston01/chat-and-react-core';
 
 interface WebSocketLike {
   readyState: number;

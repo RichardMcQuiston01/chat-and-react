@@ -1,13 +1,13 @@
-import { describe, it, expect } from 'vitest';
-import {
-  emptySchema,
-  emptyPage,
-  emptyQuestion,
-  readThinking,
-  buildThinking,
-} from './schema-helpers.js';
 import type { ChatQuestion } from '@richardmcquiston01/chat-and-react-core';
 import { parseSchema } from '@richardmcquiston01/chat-and-react-core';
+import { describe, expect, it } from 'vitest';
+import {
+  buildThinking,
+  emptyPage,
+  emptyQuestion,
+  emptySchema,
+  readThinking,
+} from './schema-helpers.js';
 
 describe('emptySchema', () => {
   it('produces a schema that parseSchema accepts without throwing', () => {
@@ -76,7 +76,10 @@ describe('thinking fields', () => {
       delaySeconds: '2',
       text: 'Hmm...',
     });
-    expect(readThinking(question({ text: 'Hmm...' }))).toEqual({ delaySeconds: '', text: 'Hmm...' });
+    expect(readThinking(question({ text: 'Hmm...' }))).toEqual({
+      delaySeconds: '',
+      text: 'Hmm...',
+    });
   });
 
   it('leaves the key out when both fields are empty', () => {

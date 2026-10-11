@@ -37,9 +37,17 @@ export function BranchingCard({
             disabled={isLast}
             onChange={(e) => {
               if (e.target.value === 'always') {
-                update({ type: 'always', destination_id: rule.destination_id } as Partial<BranchingRule>);
+                update({
+                  type: 'always',
+                  destination_id: rule.destination_id,
+                } as Partial<BranchingRule>);
               } else {
-                update({ type: 'if', form_element: '', value: '', destination_id: rule.destination_id } as Partial<BranchingRule>);
+                update({
+                  type: 'if',
+                  form_element: '',
+                  value: '',
+                  destination_id: rule.destination_id,
+                } as Partial<BranchingRule>);
               }
             }}
           >
@@ -56,18 +64,23 @@ export function BranchingCard({
             onChange={(e) => update({ destination_id: e.target.value } as Partial<BranchingRule>)}
           >
             {destinations.map((id) => (
-              <option key={id} value={id}>{id}</option>
+              <option key={id} value={id}>
+                {id}
+              </option>
             ))}
           </select>
         </div>
 
         {!isLast && (
           <button
+            type="button"
             className="btn-icon btn-icon--danger"
             style={{ alignSelf: 'flex-end', marginBottom: '2px' }}
             title="Remove rule"
             onClick={() => dispatch({ type: 'REMOVE_BRANCHING_RULE', pageIndex, ruleIndex })}
-          >×</button>
+          >
+            ×
+          </button>
         )}
       </div>
 
@@ -82,7 +95,9 @@ export function BranchingCard({
             >
               <option value="">— select question —</option>
               {questionIds.map((id) => (
-                <option key={id} value={id}>{id}</option>
+                <option key={id} value={id}>
+                  {id}
+                </option>
               ))}
             </select>
           </div>

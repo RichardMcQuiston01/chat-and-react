@@ -1,5 +1,5 @@
 // packages/core/src/chat-controller.test.ts
-import { describe, it, expect, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ChatController } from './chat-controller.js';
 import { SessionManager } from './session-manager.js';
 import type { ChatControllerConfig, ChatEvent } from './types.js';
@@ -9,47 +9,79 @@ function makeStorage() {
   const keys: string[] = [];
   return {
     getItem: (k: string) => store[k] ?? null,
-    setItem: (k: string, v: string) => { if (!(k in store)) keys.push(k); store[k] = v; },
-    removeItem: (k: string) => { delete store[k]; const i = keys.indexOf(k); if (i >= 0) keys.splice(i, 1); },
+    setItem: (k: string, v: string) => {
+      if (!(k in store)) keys.push(k);
+      store[k] = v;
+    },
+    removeItem: (k: string) => {
+      delete store[k];
+      const i = keys.indexOf(k);
+      if (i >= 0) keys.splice(i, 1);
+    },
     key: (i: number) => keys[i] ?? null,
-    get length() { return keys.length; },
+    get length() {
+      return keys.length;
+    },
   };
 }
 
 const singlePageSchema = {
   'x-chat-version': '1' as const,
-  'x-chat-pages': [{
-    id: 'p1', title: 'P1',
-    questions: [{ id: 'q1', type: 'string' as const, 'x-chat-input': 'text' as const, title: 'Q1?' }],
-    branching: [{ type: 'always' as const, destination_id: '**FORM_COMPLETED**' }],
-  }],
+  'x-chat-pages': [
+    {
+      id: 'p1',
+      title: 'P1',
+      questions: [
+        { id: 'q1', type: 'string' as const, 'x-chat-input': 'text' as const, title: 'Q1?' },
+      ],
+      branching: [{ type: 'always' as const, destination_id: '**FORM_COMPLETED**' }],
+    },
+  ],
 };
 
 const branchingSchema = {
   'x-chat-version': '1' as const,
   'x-chat-pages': [
     {
-      id: 'start', title: 'Start',
-      questions: [{ id: 'choice', type: 'string' as const, 'x-chat-input': 'radio' as const, title: 'Pick?', enum: ['A', 'B'] }],
+      id: 'start',
+      title: 'Start',
+      questions: [
+        {
+          id: 'choice',
+          type: 'string' as const,
+          'x-chat-input': 'radio' as const,
+          title: 'Pick?',
+          enum: ['A', 'B'],
+        },
+      ],
       branching: [
         { type: 'if' as const, form_element: 'choice', value: 'A', destination_id: 'page-a' },
         { type: 'always' as const, destination_id: 'page-b' },
       ],
     },
     {
-      id: 'page-a', title: 'A',
-      questions: [{ id: 'qa', type: 'string' as const, 'x-chat-input': 'text' as const, title: 'QA?' }],
+      id: 'page-a',
+      title: 'A',
+      questions: [
+        { id: 'qa', type: 'string' as const, 'x-chat-input': 'text' as const, title: 'QA?' },
+      ],
       branching: [{ type: 'always' as const, destination_id: '**FORM_COMPLETED**' }],
     },
     {
-      id: 'page-b', title: 'B',
-      questions: [{ id: 'qb', type: 'string' as const, 'x-chat-input': 'text' as const, title: 'QB?' }],
+      id: 'page-b',
+      title: 'B',
+      questions: [
+        { id: 'qb', type: 'string' as const, 'x-chat-input': 'text' as const, title: 'QB?' },
+      ],
       branching: [{ type: 'always' as const, destination_id: '**FORM_COMPLETED**' }],
     },
   ],
 };
 
-function makeController(schema: unknown = singlePageSchema, overrides: Partial<ChatControllerConfig> = {}) {
+function makeController(
+  schema: unknown = singlePageSchema,
+  overrides: Partial<ChatControllerConfig> = {},
+) {
   const session = new SessionManager(makeStorage());
   return new ChatController({ schema, ...overrides }, session);
 }
@@ -175,17 +207,23 @@ describe('ChatController', () => {
   it('filters hidden questions via x-chat-condition', () => {
     const schema = {
       'x-chat-version': '1' as const,
-      'x-chat-pages': [{
-        id: 'p1', title: 'P1',
-        questions: [
-          { id: 'q1', type: 'string' as const, 'x-chat-input': 'text' as const, title: 'Q1?' },
-          {
-            id: 'q2', type: 'string' as const, 'x-chat-input': 'text' as const, title: 'Q2?',
-            'x-chat-condition': { '==': [{ var: 'q1' }, 'show'] },
-          },
-        ],
-        branching: [{ type: 'always' as const, destination_id: '**FORM_COMPLETED**' }],
-      }],
+      'x-chat-pages': [
+        {
+          id: 'p1',
+          title: 'P1',
+          questions: [
+            { id: 'q1', type: 'string' as const, 'x-chat-input': 'text' as const, title: 'Q1?' },
+            {
+              id: 'q2',
+              type: 'string' as const,
+              'x-chat-input': 'text' as const,
+              title: 'Q2?',
+              'x-chat-condition': { '==': [{ var: 'q1' }, 'show'] },
+            },
+          ],
+          branching: [{ type: 'always' as const, destination_id: '**FORM_COMPLETED**' }],
+        },
+      ],
     };
     const c = makeController(schema);
     c.start();
@@ -232,26 +270,44 @@ const editSchema = {
   'x-chat-version': '1' as const,
   'x-chat-pages': [
     {
-      id: 'p1', title: 'P1',
-      questions: [{ id: 'choice', type: 'string' as const, 'x-chat-input': 'radio' as const, title: 'Pick?', enum: ['A', 'B'] }],
+      id: 'p1',
+      title: 'P1',
+      questions: [
+        {
+          id: 'choice',
+          type: 'string' as const,
+          'x-chat-input': 'radio' as const,
+          title: 'Pick?',
+          enum: ['A', 'B'],
+        },
+      ],
       branching: [
         { type: 'if' as const, form_element: 'choice', value: 'A', destination_id: 'p2' },
         { type: 'always' as const, destination_id: 'p4' },
       ],
     },
     {
-      id: 'p2', title: 'P2',
-      questions: [{ id: 'q2', type: 'string' as const, 'x-chat-input': 'text' as const, title: 'Q2?' }],
+      id: 'p2',
+      title: 'P2',
+      questions: [
+        { id: 'q2', type: 'string' as const, 'x-chat-input': 'text' as const, title: 'Q2?' },
+      ],
       branching: [{ type: 'always' as const, destination_id: 'p3' }],
     },
     {
-      id: 'p3', title: 'P3',
-      questions: [{ id: 'q3', type: 'string' as const, 'x-chat-input': 'text' as const, title: 'Q3?' }],
+      id: 'p3',
+      title: 'P3',
+      questions: [
+        { id: 'q3', type: 'string' as const, 'x-chat-input': 'text' as const, title: 'Q3?' },
+      ],
       branching: [{ type: 'always' as const, destination_id: '**FORM_COMPLETED**' }],
     },
     {
-      id: 'p4', title: 'P4',
-      questions: [{ id: 'q4', type: 'string' as const, 'x-chat-input': 'text' as const, title: 'Q4?' }],
+      id: 'p4',
+      title: 'P4',
+      questions: [
+        { id: 'q4', type: 'string' as const, 'x-chat-input': 'text' as const, title: 'Q4?' },
+      ],
       branching: [{ type: 'always' as const, destination_id: '**FORM_COMPLETED**' }],
     },
   ],
@@ -368,21 +424,36 @@ describe('ChatController — editing earlier answers', () => {
   it('shows the same questions when a page is re-opened as the first time it was asked', () => {
     const schema = {
       'x-chat-version': '1' as const,
-      'x-chat-pages': [{
-        id: 'p1', title: 'P1',
-        questions: [
-          { id: 'name', type: 'string' as const, 'x-chat-input': 'text' as const, title: 'Name?' },
-          {
-            id: 'bio', type: 'string' as const, 'x-chat-input': 'text' as const, title: 'Bio?',
-            'x-chat-condition': { '!!': [{ var: 'name' }] },
-          },
-        ],
-        branching: [{ type: 'always' as const, destination_id: 'p2' }],
-      }, {
-        id: 'p2', title: 'P2',
-        questions: [{ id: 'q2', type: 'string' as const, 'x-chat-input': 'text' as const, title: 'Q2?' }],
-        branching: [{ type: 'always' as const, destination_id: '**FORM_COMPLETED**' }],
-      }],
+      'x-chat-pages': [
+        {
+          id: 'p1',
+          title: 'P1',
+          questions: [
+            {
+              id: 'name',
+              type: 'string' as const,
+              'x-chat-input': 'text' as const,
+              title: 'Name?',
+            },
+            {
+              id: 'bio',
+              type: 'string' as const,
+              'x-chat-input': 'text' as const,
+              title: 'Bio?',
+              'x-chat-condition': { '!!': [{ var: 'name' }] },
+            },
+          ],
+          branching: [{ type: 'always' as const, destination_id: 'p2' }],
+        },
+        {
+          id: 'p2',
+          title: 'P2',
+          questions: [
+            { id: 'q2', type: 'string' as const, 'x-chat-input': 'text' as const, title: 'Q2?' },
+          ],
+          branching: [{ type: 'always' as const, destination_id: '**FORM_COMPLETED**' }],
+        },
+      ],
     };
     const c = makeController(schema);
     c.start();
@@ -398,7 +469,10 @@ describe('ChatController — editing earlier answers', () => {
 
   it('lets option overrides win over the schema, and the schema win over defaults', () => {
     const c = makeController(
-      { ...singlePageSchema, 'x-chat-options': { userResumable: true, allowEdit: true, typingSpeed: 40 } },
+      {
+        ...singlePageSchema,
+        'x-chat-options': { userResumable: true, allowEdit: true, typingSpeed: 40 },
+      },
       { options: { userResumable: false, thinkingDelay: 700, typingSpeed: undefined } },
     );
     c.start();

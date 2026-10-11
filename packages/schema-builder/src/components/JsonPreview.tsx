@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import type { ChatSchema } from '@richardmcquiston01/chat-and-react-core';
+import { useState } from 'react';
 
 interface Props {
   schema: ChatSchema;
@@ -10,7 +10,11 @@ export function JsonPreview({ schema, rulesJson }: Props) {
   const [open, setOpen] = useState(false);
 
   let rules: Record<string, unknown> = {};
-  try { rules = JSON.parse(rulesJson) as Record<string, unknown>; } catch { /* skip */ }
+  try {
+    rules = JSON.parse(rulesJson) as Record<string, unknown>;
+  } catch {
+    /* skip */
+  }
 
   const preview = JSON.stringify(
     { ...schema, 'x-chat-rules': Object.keys(rules).length ? rules : undefined },
@@ -20,7 +24,7 @@ export function JsonPreview({ schema, rulesJson }: Props) {
 
   return (
     <div className={`json-preview${open ? ' json-preview--open' : ''}`}>
-      <button className="json-preview-toggle" onClick={() => setOpen((o) => !o)}>
+      <button type="button" className="json-preview-toggle" onClick={() => setOpen((o) => !o)}>
         {open ? '▾' : '▸'} JSON Preview
       </button>
       {open && <pre className="json-preview-code">{preview}</pre>}

@@ -73,7 +73,7 @@ export interface ChatOptions {
 }
 
 export interface ChatSchema {
-  '$schema'?: string;
+  $schema?: string;
   'x-chat-version': '1';
   'x-chat-options'?: Partial<ChatOptions>;
   'x-chat-pages': ChatPage[];

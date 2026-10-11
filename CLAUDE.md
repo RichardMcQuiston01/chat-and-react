@@ -16,7 +16,8 @@ bun run build         # Compile TypeScript
 bun run typecheck     # Type-check without emitting
 bun run test          # Run all tests
 bun run test -- -t "test name"   # Run a single test suite
-bun run lint          # Lint all files
+bun run lint          # Lint and check formatting with Biome
+bun run format        # Apply Biome fixes and formatting
 ```
 
 ## Architecture

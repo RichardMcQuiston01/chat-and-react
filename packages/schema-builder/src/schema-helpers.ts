@@ -1,4 +1,4 @@
-import type { ChatSchema, ChatPage, ChatQuestion } from '@richardmcquiston01/chat-and-react-core';
+import type { ChatPage, ChatQuestion, ChatSchema } from '@richardmcquiston01/chat-and-react-core';
 
 function uniqueId(prefix: string, existing: string[]): string {
   let n = 1;
@@ -64,10 +64,7 @@ export function readThinking(question: ChatQuestion): ThinkingFields {
  * both are empty so the key is left out of the schema. A delay on its own is
  * written as a plain number of milliseconds.
  */
-export function buildThinking(
-  delaySeconds: string,
-  text: string,
-): ChatQuestion['x-chat-thinking'] {
+export function buildThinking(delaySeconds: string, text: string): ChatQuestion['x-chat-thinking'] {
   const trimmedDelay = delaySeconds.trim();
   const parsedSeconds = trimmedDelay === '' ? NaN : Number(trimmedDelay);
   const delay = Number.isFinite(parsedSeconds)

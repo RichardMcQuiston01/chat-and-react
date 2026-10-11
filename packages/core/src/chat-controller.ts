@@ -1,22 +1,23 @@
 // packages/core/src/chat-controller.ts
+
+import { BrowserEventAdapter } from './adapters/browser-event-adapter.js';
+import { ConsoleErrorAdapter } from './adapters/console-error-adapter.js';
+import { IdentityInputAdapter } from './adapters/identity-input-adapter.js';
+import { RuleEngine } from './rule-engine.js';
+import { parseSchema } from './schema-parser.js';
+import { SessionManager } from './session-manager.js';
 import type {
+  AnswerMap,
   ChatControllerConfig,
+  ChatError,
+  ChatEvent,
   ChatOptions,
-  ChatSchema,
   ChatPage,
   ChatQuestion,
-  AnswerMap,
-  ChatEvent,
-  ChatError,
+  ChatSchema,
   RouteEntry,
   SubmitOutcome,
 } from './types.js';
-import { parseSchema } from './schema-parser.js';
-import { RuleEngine } from './rule-engine.js';
-import { SessionManager } from './session-manager.js';
-import { IdentityInputAdapter } from './adapters/identity-input-adapter.js';
-import { BrowserEventAdapter } from './adapters/browser-event-adapter.js';
-import { ConsoleErrorAdapter } from './adapters/console-error-adapter.js';
 
 type EventName = 'page:submit' | 'form:complete';
 type Listener = (event: ChatEvent) => void;
@@ -270,8 +271,7 @@ export class ChatController {
     this.visitIndex++;
 
     if (outcome === 'edit-resumed' && resumePageId) {
-      this.currentPage =
-        this.schema['x-chat-pages'].find((p) => p.id === resumePageId) ?? null;
+      this.currentPage = this.schema['x-chat-pages'].find((p) => p.id === resumePageId) ?? null;
       return outcome;
     }
 
@@ -286,8 +286,7 @@ export class ChatController {
       this.emit('form:complete', completeEvent);
       this.currentPage = null;
     } else {
-      this.currentPage =
-        this.schema['x-chat-pages'].find((p) => p.id === nextPageId) ?? null;
+      this.currentPage = this.schema['x-chat-pages'].find((p) => p.id === nextPageId) ?? null;
     }
     return outcome;
   }
@@ -357,7 +356,8 @@ export class ChatController {
   private answersForRules(): AnswerMap {
     if (this.editIndex === null) return this.allAnswers;
     const rest = { ...this.allAnswers };
-    for (const questionId of Object.keys(this.route[this.editIndex].answers)) delete rest[questionId];
+    for (const questionId of Object.keys(this.route[this.editIndex].answers))
+      delete rest[questionId];
     return rest;
   }
 
@@ -394,7 +394,9 @@ export class ChatController {
    * Notifies all registered listeners for the given event.
    */
   private emit(event: EventName, payload: ChatEvent): void {
-    this.listeners.get(event)?.forEach((l) => l(payload));
+    this.listeners.get(event)?.forEach((l) => {
+      l(payload);
+    });
   }
 
   /**

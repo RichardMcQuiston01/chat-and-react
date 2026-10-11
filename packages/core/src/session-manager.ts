@@ -16,8 +16,7 @@ export interface SessionProgress {
 
 const KEY_SESSION = 'car:session-id';
 const keyProgress = (id: string) => `car:progress:${id}`;
-const keyInput = (sessionId: string, questionId: string) =>
-  `car:input:${sessionId}:${questionId}`;
+const keyInput = (sessionId: string, questionId: string) => `car:input:${sessionId}:${questionId}`;
 
 export class SessionManager {
   private readonly sessionId: string;
@@ -38,10 +37,7 @@ export class SessionManager {
 
   saveProgress(currentPageId: string, answers: AnswerMap): void {
     if (!this.available) return;
-    this.storage.setItem(
-      keyProgress(this.sessionId),
-      JSON.stringify({ currentPageId, answers }),
-    );
+    this.storage.setItem(keyProgress(this.sessionId), JSON.stringify({ currentPageId, answers }));
   }
 
   loadProgress(): SessionProgress | null {
@@ -57,10 +53,7 @@ export class SessionManager {
 
   saveInput(questionId: string, value: string | string[]): void {
     if (!this.available) return;
-    this.storage.setItem(
-      keyInput(this.sessionId, questionId),
-      JSON.stringify(value),
-    );
+    this.storage.setItem(keyInput(this.sessionId, questionId), JSON.stringify(value));
   }
 
   loadInput(questionId: string): string | string[] | null {

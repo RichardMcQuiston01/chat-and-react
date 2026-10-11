@@ -1,4 +1,4 @@
-import type { ErrorLogAdapter, ChatError } from '@richardmcquiston01/chat-and-react-core';
+import type { ChatError, ErrorLogAdapter } from '@richardmcquiston01/chat-and-react-core';
 
 interface WebhookErrorOptions {
   headers?: Record<string, string>;

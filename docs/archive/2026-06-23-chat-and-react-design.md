@@ -1,5 +1,7 @@
 # chat-and-react — Design Spec
 
+> **Archived.** This is the original v1 design spec from 2026-06-23. It is kept for history and does not describe the current code. Newer features, such as one-question-at-a-time pages, editing answers, the typing effect, and the thinking bubble, are not in it. For current behavior, see the [README](../../README.md) and the [docs](../options.md).
+
 **Date:** 2026-06-23
 **Status:** Approved
 

@@ -89,7 +89,9 @@ export class Renderer {
   /** Removes every Edit icon, for example once the form is complete. */
   removeEditButtons(): void {
     this.editable = false;
-    this.messageList.querySelectorAll('.car-edit').forEach((button) => button.remove());
+    this.messageList.querySelectorAll('.car-edit').forEach((button) => {
+      button.remove();
+    });
     this.pruneEditIconCopies();
   }
 

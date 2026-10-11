@@ -16,7 +16,9 @@ export class RuleEngine {
   evaluate(rule: JsonLogicRule, answers: AnswerMap): boolean {
     try {
       // json-logic-js apply() returns any; cast to boolean
-      return Boolean((jsonLogic as { apply: (rule: unknown, data: unknown) => unknown }).apply(rule, answers));
+      return Boolean(
+        (jsonLogic as { apply: (rule: unknown, data: unknown) => unknown }).apply(rule, answers),
+      );
     } catch (cause) {
       throw { code: 'RULE_EVAL_FAILED', message: 'Rule evaluation failed', cause };
     }

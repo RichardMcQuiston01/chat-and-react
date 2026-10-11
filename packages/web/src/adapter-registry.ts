@@ -1,8 +1,12 @@
-import type { InputAdapter, OutputAdapter, ErrorLogAdapter } from '@richardmcquiston01/chat-and-react-core';
+import type {
+  ErrorLogAdapter,
+  InputAdapter,
+  OutputAdapter,
+} from '@richardmcquiston01/chat-and-react-core';
 import {
-  IdentityInputAdapter,
   BrowserEventAdapter,
   ConsoleErrorAdapter,
+  IdentityInputAdapter,
 } from '@richardmcquiston01/chat-and-react-core';
 
 export class AdapterRegistry {

@@ -1,4 +1,4 @@
-import type { ErrorLogAdapter, ChatError } from '../types.js';
+import type { ChatError, ErrorLogAdapter } from '../types.js';
 
 export class ConsoleErrorAdapter implements ErrorLogAdapter {
   log(error: ChatError): void {

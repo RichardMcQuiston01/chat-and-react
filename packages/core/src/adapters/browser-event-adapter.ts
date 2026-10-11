@@ -1,4 +1,4 @@
-import type { OutputAdapter, ChatEvent } from '../types.js';
+import type { ChatEvent, OutputAdapter } from '../types.js';
 
 export class BrowserEventAdapter implements OutputAdapter {
   emit(event: ChatEvent): void {

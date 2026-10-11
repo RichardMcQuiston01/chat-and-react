@@ -9,8 +9,6 @@
  * donation widget should never be the thing that breaks a demo.
  */
 (function initDonateCard() {
-  'use strict';
-
   var STORAGE_KEY = 'donate-card-dismissed';
   var card = document.getElementById('donateCard');
   if (!card) {

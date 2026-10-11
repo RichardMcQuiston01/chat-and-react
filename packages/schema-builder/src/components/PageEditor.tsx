@@ -1,7 +1,7 @@
-import type { ChatSchema, ChatPage } from '@richardmcquiston01/chat-and-react-core';
+import type { ChatPage, ChatSchema } from '@richardmcquiston01/chat-and-react-core';
 import type { BuilderAction } from '../reducer.js';
-import { QuestionCard } from './QuestionCard.js';
 import { BranchingCard } from './BranchingCard.js';
+import { QuestionCard } from './QuestionCard.js';
 
 interface Props {
   page: ChatPage;
@@ -56,6 +56,7 @@ export function PageEditor({ page, pageIndex, schema, ruleNames, dispatch }: Pro
           />
         ))}
         <button
+          type="button"
           className="btn btn-ghost"
           onClick={() => dispatch({ type: 'ADD_QUESTION', pageIndex })}
         >
@@ -78,6 +79,7 @@ export function PageEditor({ page, pageIndex, schema, ruleNames, dispatch }: Pro
           />
         ))}
         <button
+          type="button"
           className="btn btn-ghost"
           onClick={() => dispatch({ type: 'ADD_BRANCHING_RULE', pageIndex })}
         >

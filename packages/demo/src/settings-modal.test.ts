@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createSettingsModal } from './settings-modal.js';
-import { DEFAULT_SETTINGS } from './settings.js';
 import type { DemoSettings } from './settings.js';
+import { DEFAULT_SETTINGS } from './settings.js';
+import { createSettingsModal } from './settings-modal.js';
 
 function field(name: string): HTMLInputElement | HTMLSelectElement {
   const element = document.querySelector<HTMLInputElement | HTMLSelectElement>(`[name="${name}"]`);
@@ -97,7 +97,9 @@ describe('settings modal', () => {
     button('Reset to defaults').click();
 
     expect(onReset).toHaveBeenCalledTimes(1);
-    expect((field('typingSpeed') as HTMLInputElement).value).toBe(String(DEFAULT_SETTINGS.typingSpeed));
+    expect((field('typingSpeed') as HTMLInputElement).value).toBe(
+      String(DEFAULT_SETTINGS.typingSpeed),
+    );
   });
 
   it('cancel closes without saving', () => {

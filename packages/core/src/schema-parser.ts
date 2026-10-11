@@ -1,4 +1,4 @@
-import type { ChatSchema, ChatPage } from './types.js';
+import type { ChatPage, ChatSchema } from './types.js';
 
 const VALID_INPUTS = new Set(['text', 'textarea', 'dropdown', 'radio', 'checkbox']);
 const FORM_COMPLETED = '**FORM_COMPLETED**';
@@ -144,9 +144,7 @@ function validateQuestion(
     const c = condition as Record<string, unknown>;
     if ('ref' in c && typeof c['ref'] === 'string') {
       if (!(c['ref'] in rules)) {
-        throw makeError(
-          `Question "${q['id']}" x-chat-condition refs unknown rule "${c['ref']}"`,
-        );
+        throw makeError(`Question "${q['id']}" x-chat-condition refs unknown rule "${c['ref']}"`);
       }
     }
   }

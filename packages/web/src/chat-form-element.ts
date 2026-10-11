@@ -1,14 +1,14 @@
-import { ChatController, SessionManager } from '@richardmcquiston01/chat-and-react-core';
 import type {
-  ChatQuestion,
-  ChatEvent,
   AnswerMap,
+  ChatEvent,
   ChatOptions,
+  ChatQuestion,
   HideAnimation,
 } from '@richardmcquiston01/chat-and-react-core';
+import { ChatController, SessionManager } from '@richardmcquiston01/chat-and-react-core';
 import { AdapterRegistry } from './adapter-registry.js';
-import { Renderer } from './renderer.js';
 import type { ThinkingConfig } from './renderer.js';
+import { Renderer } from './renderer.js';
 import { getStyles } from './styles.js';
 
 /**
@@ -139,7 +139,9 @@ export class ChatFormElement extends HTMLElement {
   }
 
   disconnectedCallback(): void {
-    this.hideTimers.forEach((timerId) => window.clearTimeout(timerId));
+    this.hideTimers.forEach((timerId) => {
+      window.clearTimeout(timerId);
+    });
     this.hideTimers.clear();
     this.renderer?.cancelAnimations();
     this.controller?.destroy();
@@ -183,25 +185,19 @@ export class ChatFormElement extends HTMLElement {
     );
 
     this.controller.on('page:submit', (e: ChatEvent) => {
-      this.dispatchEvent(
-        new CustomEvent('chat-page-submit', { detail: e, bubbles: true }),
-      );
+      this.dispatchEvent(new CustomEvent('chat-page-submit', { detail: e, bubbles: true }));
     });
 
     this.controller.on('form:complete', (e: ChatEvent) => {
       // Answers are final once the form is complete.
       this.renderer?.removeEditButtons();
-      this.dispatchEvent(
-        new CustomEvent('chat-form-complete', { detail: e, bubbles: true }),
-      );
+      this.dispatchEvent(new CustomEvent('chat-form-complete', { detail: e, bubbles: true }));
     });
 
     try {
       this.controller.start();
     } catch (e) {
-      this.dispatchEvent(
-        new CustomEvent('chat-error', { detail: e, bubbles: true }),
-      );
+      this.dispatchEvent(new CustomEvent('chat-error', { detail: e, bubbles: true }));
       return;
     }
 
@@ -380,17 +376,16 @@ export class ChatFormElement extends HTMLElement {
     if (this.controller?.getOptions().localStorage && this.session && this.storage) {
       const sessionId = this.session.getSessionId();
       const storage = this.storage;
-      inputArea.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(
-        'input:not([type="radio"]):not([type="checkbox"]), textarea',
-      ).forEach((el) => {
-        const questionId = (el as HTMLElement).dataset['questionId'] ?? '';
-        el.addEventListener('input', () => {
-          storage.setItem(
-            `car:input:${sessionId}:${questionId}`,
-            (el as HTMLInputElement).value,
-          );
+      inputArea
+        .querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(
+          'input:not([type="radio"]):not([type="checkbox"]), textarea',
+        )
+        .forEach((el) => {
+          const questionId = (el as HTMLElement).dataset['questionId'] ?? '';
+          el.addEventListener('input', () => {
+            storage.setItem(`car:input:${sessionId}:${questionId}`, (el as HTMLInputElement).value);
+          });
         });
-      });
     }
 
     // Keep the new question on screen while it is thought about and typed.
@@ -417,9 +412,7 @@ export class ChatFormElement extends HTMLElement {
   private isTextEntry(target: EventTarget | null): boolean {
     if (target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return true;
     return (
-      target instanceof HTMLInputElement &&
-      target.type !== 'radio' &&
-      target.type !== 'checkbox'
+      target instanceof HTMLInputElement && target.type !== 'radio' && target.type !== 'checkbox'
     );
   }
 
@@ -460,7 +453,12 @@ export class ChatFormElement extends HTMLElement {
 
     // Keep the page title in the history once its first question is answered,
     // because the title bubble is only shown on the first step.
-    if (hasMoreQuestions && !this.pageTitleLogged && this.editingRouteIndex === null && page?.title) {
+    if (
+      hasMoreQuestions &&
+      !this.pageTitleLogged &&
+      this.editingRouteIndex === null &&
+      page?.title
+    ) {
       const titleBubble = this.renderer.appendBotBubble(page.title, routeIndex);
       this.scheduleHide(titleBubble, this.autoHideMs);
       this.pageTitleLogged = true;
@@ -620,9 +618,9 @@ export class ChatFormElement extends HTMLElement {
         answers[q.id] = select?.value ?? '';
       } else {
         // text / textarea
-        const input = inputArea.querySelector<
-          HTMLInputElement | HTMLTextAreaElement
-        >(`[data-question-id="${q.id}"]`);
+        const input = inputArea.querySelector<HTMLInputElement | HTMLTextAreaElement>(
+          `[data-question-id="${q.id}"]`,
+        );
         answers[q.id] = input?.value ?? '';
       }
     }

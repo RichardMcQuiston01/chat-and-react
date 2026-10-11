@@ -1,14 +1,14 @@
 import '@richardmcquiston01/chat-and-react';
 import { demoSchema } from './demo-schema.js';
-import { createSettingsModal } from './settings-modal.js';
+import type { DemoSettings } from './settings.js';
 import {
   clearSettings,
+  DEFAULT_SETTINGS,
   getBrowserStorage,
   loadSettings,
   saveSettings,
-  DEFAULT_SETTINGS,
 } from './settings.js';
-import type { DemoSettings } from './settings.js';
+import { createSettingsModal } from './settings-modal.js';
 import './donate-widget.css';
 import './donate-widget.js';
 
