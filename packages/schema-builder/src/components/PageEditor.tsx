@@ -1,4 +1,5 @@
 import type { ChatPage, ChatSchema } from '@richardmcquiston01/chat-and-react-core';
+import { useId } from 'react';
 import type { BuilderAction } from '../reducer.js';
 import { BranchingCard } from './BranchingCard.js';
 import { QuestionCard } from './QuestionCard.js';
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function PageEditor({ page, pageIndex, schema, ruleNames, dispatch }: Props) {
+  const uid = useId();
   const allPageIds = schema['x-chat-pages'].map((p) => p.id);
   const allQuestionIds = schema['x-chat-pages'].flatMap((p) => p.questions.map((q) => q.id));
 
@@ -19,8 +21,11 @@ export function PageEditor({ page, pageIndex, schema, ruleNames, dispatch }: Pro
     <div className="page-editor">
       <div className="page-editor-meta">
         <div className="field">
-          <label className="field-label">Page ID</label>
+          <label className="field-label" htmlFor={`${uid}-page-id`}>
+            Page ID
+          </label>
           <input
+            id={`${uid}-page-id`}
             className="field-input"
             value={page.id}
             onChange={(e) =>
@@ -30,8 +35,11 @@ export function PageEditor({ page, pageIndex, schema, ruleNames, dispatch }: Pro
           />
         </div>
         <div className="field">
-          <label className="field-label">Title</label>
+          <label className="field-label" htmlFor={`${uid}-page-title`}>
+            Title
+          </label>
           <input
+            id={`${uid}-page-title`}
             className="field-input"
             value={page.title}
             onChange={(e) =>
@@ -45,8 +53,11 @@ export function PageEditor({ page, pageIndex, schema, ruleNames, dispatch }: Pro
       <div className="section-label">Questions</div>
       <div className="question-list">
         {page.questions.map((q, qi) => (
+          // The cards hold no state of their own, so the index is a safe key. An id-based key
+          // would remount the card, and drop focus, on every keystroke in the ID field.
           <QuestionCard
-            key={q.id + qi}
+            // biome-ignore lint/suspicious/noArrayIndexKey: the cards hold no state of their own
+            key={qi}
             question={q}
             pageIndex={pageIndex}
             questionIndex={qi}
@@ -67,7 +78,9 @@ export function PageEditor({ page, pageIndex, schema, ruleNames, dispatch }: Pro
       <div className="section-label">Branching</div>
       <div className="branching-list">
         {page.branching.map((rule, ri) => (
+          // Rules have no id and the cards hold no state of their own, so the index is a safe key.
           <BranchingCard
+            // biome-ignore lint/suspicious/noArrayIndexKey: the cards hold no state of their own
             key={ri}
             rule={rule}
             ruleIndex={ri}

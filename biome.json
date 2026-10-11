@@ -27,12 +27,6 @@
     "enabled": true,
     "rules": {
       "recommended": true,
-      "a11y": {
-        "noLabelWithoutControl": "warn"
-      },
-      "suspicious": {
-        "noArrayIndexKey": "warn"
-      },
       "complexity": {
         "useLiteralKeys": "off"
       }

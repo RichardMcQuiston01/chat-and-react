@@ -1,4 +1,5 @@
 import type { BranchingRule } from '@richardmcquiston01/chat-and-react-core';
+import { useId } from 'react';
 import type { BuilderAction } from '../reducer.js';
 
 interface Props {
@@ -20,6 +21,8 @@ export function BranchingCard({
   questionIds,
   dispatch,
 }: Props) {
+  const uid = useId();
+
   function update(patch: Partial<BranchingRule>) {
     dispatch({ type: 'UPDATE_BRANCHING_RULE', pageIndex, ruleIndex, patch });
   }
@@ -30,8 +33,11 @@ export function BranchingCard({
     <div className={`card branching-card${isLast ? ' branching-card--terminal' : ''}`}>
       <div className="card-row">
         <div className="field field--sm">
-          <label className="field-label">Type</label>
+          <label className="field-label" htmlFor={`${uid}-type`}>
+            Type
+          </label>
           <select
+            id={`${uid}-type`}
             className="field-input"
             value={rule.type}
             disabled={isLast}
@@ -57,8 +63,11 @@ export function BranchingCard({
         </div>
 
         <div className="field">
-          <label className="field-label">Go to</label>
+          <label className="field-label" htmlFor={`${uid}-go-to`}>
+            Go to
+          </label>
           <select
+            id={`${uid}-go-to`}
             className="field-input"
             value={rule.destination_id}
             onChange={(e) => update({ destination_id: e.target.value } as Partial<BranchingRule>)}
@@ -87,8 +96,11 @@ export function BranchingCard({
       {rule.type === 'if' && (
         <div className="card-row">
           <div className="field">
-            <label className="field-label">Question</label>
+            <label className="field-label" htmlFor={`${uid}-question`}>
+              Question
+            </label>
             <select
+              id={`${uid}-question`}
               className="field-input"
               value={rule.form_element}
               onChange={(e) => update({ form_element: e.target.value } as Partial<BranchingRule>)}
@@ -102,8 +114,11 @@ export function BranchingCard({
             </select>
           </div>
           <div className="field">
-            <label className="field-label">Equals</label>
+            <label className="field-label" htmlFor={`${uid}-equals`}>
+              Equals
+            </label>
             <input
+              id={`${uid}-equals`}
               className="field-input"
               value={rule.type === 'if' ? rule.value : ''}
               onChange={(e) => update({ value: e.target.value } as Partial<BranchingRule>)}
