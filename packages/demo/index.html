@@ -174,6 +174,50 @@
         </div>
       </aside>
     </main>
+    <aside> not <div>: this is complementary content, and the landmark lets
+          screen-reader users skip it.
+        - The QR sits on an explicit white plate. QR scanners need light modules to
+          be genuinely light; rendering black-on-dark-navy breaks scanning.
+        - The dismiss button is real. A donation ask that cannot be closed is a
+          dark pattern, and on a demo it covers content on small screens.
+        - aria-label on the link repeats the destination because "Donate via
+          Stripe →" read aloud with the arrow is awkward.
+    -->
+    <aside class="donate-card" id="donateCard" aria-labelledby="donateCardTitle">
+      <button
+        class="donate-card__dismiss"
+        type="button"
+        aria-label="Dismiss support message"
+        data-donate-dismiss
+      >
+        &times;
+      </button>
+
+      <h2 class="donate-card__title" id="donateCardTitle">
+        <span class="donate-card__heart" aria-hidden="true">&#9829;</span>
+        Support this project
+      </h2>
+
+      <p class="donate-card__body">
+        If this app, code, or repository has helped you or someone you know, please
+        consider donating. I appreciate any help to offset the costs of development
+        and/or AI Credits.
+      </p>
+
+      <div class="donate-card__qr">
+        <img src="./donate.svg" alt="QR code linking to the Stripe donation page" width="180" height="180" />
+      </div>
+
+      <a
+        class="donate-card__link"
+        href="https://donate.stripe.com/00w5kD3Gj1Xo9v7gVOcs800"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Donate via Stripe, opens in a new tab"
+      >
+        Donate via Stripe <span aria-hidden="true">&rarr;</span>
+      </a>
+    </aside>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
