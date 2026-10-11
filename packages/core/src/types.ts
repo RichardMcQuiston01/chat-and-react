@@ -44,6 +44,10 @@ export interface ChatOptions {
   userResumable: boolean;
   localStorage: boolean;
   autoComplete: boolean;
+  /** Show an Edit icon on answered questions so users can change their answers. */
+  allowEdit: boolean;
+  /** Milliseconds to wait before hiding an answered question bubble. 0 keeps them visible. */
+  autoHideQuestions: number;
 }
 
 export interface ChatSchema {
@@ -60,7 +64,25 @@ export interface PageSubmitEvent {
   pageId: string;
   visitIndex: number;
   answers: AnswerMap;
+  /** Present and true when the user re-submitted a page they had already answered. */
+  edited?: boolean;
 }
+
+/** One page the user has submitted, in the order they visited it. */
+export interface RouteEntry {
+  pageId: string;
+  answers: AnswerMap;
+}
+
+/**
+ * What happened to the form after `submitPage`:
+ * - `advanced`: a normal submit; the form moved to the next page or completed.
+ * - `edit-resumed`: an earlier page was edited and the route is unchanged, so the
+ *   form is back on the page the user was on.
+ * - `edit-rerouted`: an earlier page was edited and its branching now leads
+ *   somewhere else. Later pages were dropped and the form moved to the new page.
+ */
+export type SubmitOutcome = 'advanced' | 'edit-resumed' | 'edit-rerouted';
 
 export interface FormCompleteEvent {
   type: 'form:complete';

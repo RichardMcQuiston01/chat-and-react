@@ -12,8 +12,11 @@ Fires each time a page is submitted. A page's questions are asked one at a time,
   pageId: string;
   visitIndex: number; // starts at 0 and goes up by 1 for each page visited
   answers: Record<string, string | string[]>;
+  edited?: true; // only present when the user re-submitted a page they had already answered
 }
 ```
+
+When a user edits an earlier answer (see [Options](options.md#editing-answers)), the page is submitted again with the new answers. The event has `edited: true` and a new `visitIndex`. If you save answers as they arrive, replace what you stored for that `pageId`.
 
 ## `chat-form-complete`
 

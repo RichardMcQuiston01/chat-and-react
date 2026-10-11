@@ -8,6 +8,8 @@ import type {
   AnswerMap,
   ChatEvent,
   ChatError,
+  RouteEntry,
+  SubmitOutcome,
 } from './types.js';
 import { parseSchema } from './schema-parser.js';
 import { RuleEngine } from './rule-engine.js';
@@ -23,6 +25,8 @@ const DEFAULT_OPTIONS: ChatOptions = {
   userResumable: true,
   localStorage: true,
   autoComplete: true,
+  allowEdit: false,
+  autoHideQuestions: 0,
 };
 
 /**
@@ -38,6 +42,12 @@ export class ChatController {
   private currentPage: ChatPage | null = null;
   private allAnswers: AnswerMap = {};
   private visitIndex = 0;
+  /** Pages submitted in this session, in visit order. Used for editing earlier answers. */
+  private route: RouteEntry[] = [];
+  /** Index in `route` of the page being edited, or null when not editing. */
+  private editIndex: number | null = null;
+  /** The page the user was on before they started editing an earlier one. */
+  private resumePageId: string | null = null;
   private readonly listeners = new Map<EventName, Set<Listener>>();
 
   /**
@@ -84,6 +94,8 @@ export class ChatController {
       userResumable: schemaOpts.userResumable ?? DEFAULT_OPTIONS.userResumable,
       localStorage: schemaOpts.localStorage ?? DEFAULT_OPTIONS.localStorage,
       autoComplete: schemaOpts.autoComplete ?? DEFAULT_OPTIONS.autoComplete,
+      allowEdit: schemaOpts.allowEdit ?? DEFAULT_OPTIONS.allowEdit,
+      autoHideQuestions: schemaOpts.autoHideQuestions ?? DEFAULT_OPTIONS.autoHideQuestions,
     };
 
     if (this.options.userResumable) {
@@ -125,25 +137,108 @@ export class ChatController {
   }
 
   /**
+   * Returns the pages the user has submitted in this session, in visit order.
+   * A session restored from storage starts with an empty route.
+   */
+  getRoute(): RouteEntry[] {
+    return this.route.map((entry) => ({ pageId: entry.pageId, answers: { ...entry.answers } }));
+  }
+
+  /**
+   * Returns every answer given so far, for pre-filling inputs.
+   */
+  getAnswers(): AnswerMap {
+    return { ...this.allAnswers };
+  }
+
+  /**
+   * Re-opens a page the user already submitted so its answers can be changed.
+   * Call `submitPage` afterwards to save the new answers. Not available once the
+   * form is complete.
+   *
+   * @param routeIndex - Position of the page in `getRoute()`.
+   * @returns true when the page was re-opened.
+   */
+  reopenPage(routeIndex: number): boolean {
+    if (!this.schema || !this.currentPage) return false;
+    const entry = this.route[routeIndex];
+    if (!entry) return false;
+    const page = this.schema['x-chat-pages'].find((p) => p.id === entry.pageId);
+    if (!page) return false;
+
+    // Remember where the user was, but only the first time: editing another
+    // earlier page before finishing this edit must still return to that page.
+    if (this.editIndex === null) this.resumePageId = this.currentPage.id;
+    this.editIndex = routeIndex;
+    this.currentPage = page;
+    return true;
+  }
+
+  /**
    * Submits the answers for the current page and advances the session.
    * - Accumulates answers into `allAnswers`.
    * - Emits `page:submit` (suppressed when `userResumable` is false).
    * - Resolves branching to find the next page.
    * - Emits `form:complete` and clears session when `**FORM_COMPLETED**` is reached.
    *
+   * When the page was re-opened with `reopenPage`, the new answers replace the
+   * old ones and `page:submit` is emitted with `edited: true`. If the page's
+   * branching still leads to the same next page, the form returns to the page the
+   * user was on. If it leads somewhere else, the pages that followed it are
+   * dropped, along with their answers, and the form continues from the new page.
+   *
    * @param pageAnswers - Answers collected for the current page.
    */
-  submitPage(pageAnswers: AnswerMap): void {
-    if (!this.currentPage || !this.schema) return;
+  submitPage(pageAnswers: AnswerMap): SubmitOutcome {
+    if (!this.currentPage || !this.schema) return 'advanced';
 
-    this.allAnswers = { ...this.allAnswers, ...pageAnswers };
     const pageId = this.currentPage.id;
     const currentVisitIndex = this.visitIndex;
-    const nextPageId = this.resolveBranching(this.currentPage, this.allAnswers);
+    const editedIndex = this.editIndex;
+    const isEdit = editedIndex !== null;
+
+    let outcome: SubmitOutcome = 'advanced';
+    let nextPageId: string;
+    let resumePageId: string | null = null;
+
+    if (isEdit) {
+      const entry = this.route[editedIndex];
+      // Replace the old answers for this page, including any question that is
+      // no longer visible after the change.
+      const remaining = { ...this.allAnswers };
+      for (const questionId of Object.keys(entry.answers)) delete remaining[questionId];
+      this.allAnswers = { ...remaining, ...pageAnswers };
+      entry.answers = { ...pageAnswers };
+
+      nextPageId = this.resolveBranching(this.currentPage, this.allAnswers);
+      const expectedNextPageId = this.route[editedIndex + 1]?.pageId ?? this.resumePageId;
+
+      if (nextPageId === expectedNextPageId) {
+        outcome = 'edit-resumed';
+        resumePageId = this.resumePageId;
+      } else {
+        outcome = 'edit-rerouted';
+        // The route changed: forget the pages that followed and their answers.
+        for (const later of this.route.slice(editedIndex + 1)) {
+          for (const questionId of Object.keys(later.answers)) delete this.allAnswers[questionId];
+        }
+        this.route.length = editedIndex + 1;
+      }
+      this.editIndex = null;
+      this.resumePageId = null;
+    } else {
+      this.allAnswers = { ...this.allAnswers, ...pageAnswers };
+      this.route.push({ pageId, answers: { ...pageAnswers } });
+      nextPageId = this.resolveBranching(this.currentPage, this.allAnswers);
+    }
 
     if (this.options.userResumable) {
       const progressPageId =
-        nextPageId === '**FORM_COMPLETED**' ? pageId : nextPageId;
+        outcome === 'edit-resumed' && resumePageId
+          ? resumePageId
+          : nextPageId === '**FORM_COMPLETED**'
+            ? pageId
+            : nextPageId;
       this.session.saveProgress(progressPageId, this.allAnswers);
 
       const submitEvent: ChatEvent = {
@@ -152,12 +247,19 @@ export class ChatController {
         pageId,
         visitIndex: currentVisitIndex,
         answers: pageAnswers,
+        ...(isEdit ? { edited: true } : {}),
       };
       this.safeEmit(submitEvent);
       this.emit('page:submit', submitEvent);
     }
 
     this.visitIndex++;
+
+    if (outcome === 'edit-resumed' && resumePageId) {
+      this.currentPage =
+        this.schema['x-chat-pages'].find((p) => p.id === resumePageId) ?? null;
+      return outcome;
+    }
 
     if (nextPageId === '**FORM_COMPLETED**') {
       this.session.clearAll();
@@ -171,8 +273,9 @@ export class ChatController {
       this.currentPage = null;
     } else {
       this.currentPage =
-        this.schema!['x-chat-pages'].find((p) => p.id === nextPageId) ?? null;
+        this.schema['x-chat-pages'].find((p) => p.id === nextPageId) ?? null;
     }
+    return outcome;
   }
 
   /**
@@ -225,11 +328,23 @@ export class ChatController {
     }
 
     try {
-      return this.ruleEngine.evaluate(rule, this.allAnswers);
+      return this.ruleEngine.evaluate(rule, this.answersForRules());
     } catch (e) {
       this.config.errorAdapter.log(e as ChatError);
       return false;
     }
+  }
+
+  /**
+   * The answers question conditions are checked against. While an earlier page is
+   * being edited, that page's own answers are left out, so its questions are
+   * shown exactly as they were the first time the page was asked.
+   */
+  private answersForRules(): AnswerMap {
+    if (this.editIndex === null) return this.allAnswers;
+    const rest = { ...this.allAnswers };
+    for (const questionId of Object.keys(this.route[this.editIndex].answers)) delete rest[questionId];
+    return rest;
   }
 
   /**
