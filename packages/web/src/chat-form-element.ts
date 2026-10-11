@@ -179,14 +179,30 @@ export class ChatFormElement extends HTMLElement {
       btn.addEventListener('click', () => this.handleSubmit(questions));
     }
 
-    // Pressing Enter in a single-line input submits the page, like Continue.
-    // Textareas keep Enter for new lines, and buttons already act on Enter.
+    // Enter in a single-line input moves on to the next question, and submits
+    // the page from the last one. Textareas keep Enter for new lines, and
+    // buttons already act on Enter.
     inputArea.addEventListener('keydown', (event: Event) => {
       const keyEvent = event as KeyboardEvent;
       const target = keyEvent.target;
       if (keyEvent.key !== 'Enter' || !(target instanceof HTMLInputElement)) return;
       keyEvent.preventDefault();
-      this.handleSubmit(questions);
+
+      const questionElements = Array.from(
+        inputArea.querySelectorAll<HTMLElement>('[data-question-id]'),
+      );
+      const currentIndex = questionElements.findIndex((el) => el.contains(target));
+      const nextElement = questionElements[currentIndex + 1];
+      if (currentIndex === -1 || !nextElement) {
+        this.handleSubmit(questions);
+        return;
+      }
+
+      // Radio / checkbox questions are wrapped in a div; focus their first input.
+      const focusTarget = nextElement.matches('input, select, textarea')
+        ? nextElement
+        : nextElement.querySelector<HTMLElement>('input');
+      (focusTarget ?? nextElement).focus();
     });
 
     // Apply autocomplete="off" when the option is disabled.
