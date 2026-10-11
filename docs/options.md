@@ -50,6 +50,18 @@ Hidden bubbles stay in the page, marked hidden, and the user can't edit an answe
 
 When bubbles stay on screen, each question and answer pair has a little space around it so the finished chat is easy to read. Change it with CSS, for example `chat-form::part(bubble-user) { margin-bottom: 24px; }`.
 
+## Edit icon slot
+
+The Edit icon is a pencil (✎) by default. To use your own, such as an icon from Font Awesome, put an element in the `edit-icon` slot:
+
+```html
+<chat-form schema="...">
+  <i slot="edit-icon" class="fa-solid fa-pen"></i>
+</chat-form>
+```
+
+Every answer needs its own icon, so the form places a copy of your element on each Edit button. The copy stays in your page, so your icon font and CSS still work. Your original element is never shown. You can also use `<template slot="edit-icon">` to hold the icon's markup. Style it with `chat-form::part(edit-icon)`.
+
 ## Number keys
 
 Radio buttons and checkboxes show a number next to each choice. Press the number to pick a radio choice, or to tick or untick a checkbox. This works for the first nine choices and is always on.

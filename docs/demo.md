@@ -35,6 +35,16 @@ Your answer about occupation on the Preferences page decides where you go next:
 
 On the right side of the screen, a **live event log** shows the data for each `chat-page-submit` and `chat-form-complete` event as it happens. When the form is done, a **Start over** button appears. It clears the log and resets the form.
 
+## Settings
+
+The gear icon in the top-right corner opens a settings window. It lets you try the options from [Options](options.md): editing, hiding, typing speed, the thinking bubble, and more.
+
+- **Save and restart** saves the settings in your browser's `localStorage` and starts the form again with them.
+- **Reset to defaults** forgets the saved settings.
+- **Cancel** (or Esc) closes the window without changes.
+
+Times for hiding and thinking are in seconds. Typing speed is in milliseconds per character. If the browser blocks `localStorage`, the window says so and the new settings last until you reload.
+
 ## Build the demo for a website
 
 ```bash

@@ -69,7 +69,7 @@ This question only shows if the user answered `initial_answer`.
 
 ## Thinking before a question
 
-Add `x-chat-thinking` to a question to show a "thinking" bubble before it appears. See [Options](options.md#thinking-bubble).
+Add `x-chat-thinking` to a question to show a "thinking" bubble before it appears. See [Options](options.md#thinking-bubble). The Schema Builder has fields for it on each question.
 
 ```json
 {

@@ -38,7 +38,10 @@ chat-form::part(btn-icon) {
   /* icon inside the submit button */
 }
 chat-form::part(edit-btn) {
-  /* Edit icon on an answer */
+  /* Edit button on an answer */
+}
+chat-form::part(edit-icon) {
+  /* icon inside the Edit button */
 }
 ```
 
