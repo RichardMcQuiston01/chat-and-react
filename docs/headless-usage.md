@@ -1,5 +1,9 @@
 # Headless Usage
 
+[Back to README](../README.md)
+
+| [Editing earlier answers](#editing-earlier-answers) |
+
 "Headless" means using the form logic with no screen. The `@richardmcquiston01/chat-and-react-core` package works in Node or on a server. It does not need the DOM.
 
 ```ts
@@ -49,3 +53,9 @@ const outcome = controller.submitPage({ full_name: "Ada L." });
 ```
 
 `page:submit` fires again with `edited: true`.
+
+[Back to Top](#headless-usage)
+
+---
+
+[Back to README](../README.md)

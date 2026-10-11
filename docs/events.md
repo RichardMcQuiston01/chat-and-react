@@ -1,5 +1,9 @@
 # Events
 
+[Back to README](../README.md)
+
+| [`chat-page-submit`](#chat-page-submit) | [`chat-form-complete`](#chat-form-complete) | [Listening for events](#listening-for-events) |
+
 The form sends two events. Both are browser `CustomEvent`s that bubble up the page. The data is in `event.detail`.
 
 ## `chat-page-submit`
@@ -18,6 +22,8 @@ Fires each time a page is submitted. A page's questions are asked one at a time,
 
 When a user edits an earlier answer (see [Options](options.md#editing-answers)), the page is submitted again with the new answers. The event has `edited: true` and a new `visitIndex`. If you save answers as they arrive, replace what you stored for that `pageId`.
 
+[Back to Top](#events)
+
 ## `chat-form-complete`
 
 Fires when there are no more pages left.
@@ -28,6 +34,8 @@ Fires when there are no more pages left.
   allAnswers: Record<string, string | string[]>;
 }
 ```
+
+[Back to Top](#events)
 
 ## Listening for events
 
@@ -44,3 +52,9 @@ el.addEventListener("chat-form-complete", (e) => {
 ```
 
 Want to send events somewhere else, like a server? See [Custom Adapters](custom-adapters.md).
+
+[Back to Top](#events)
+
+---
+
+[Back to README](../README.md)

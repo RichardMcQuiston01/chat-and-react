@@ -1,5 +1,9 @@
 # Demo
 
+[Back to README](../README.md)
+
+| [Run the demo](#run-the-demo) | [What the demo shows](#what-the-demo-shows) | [Settings](#settings) | [Build the demo for a website](#build-the-demo-for-a-website) | [Host the demo on GitHub Pages](#host-the-demo-on-github-pages) | [Run the demo with Docker](#run-the-demo-with-docker) |
+
 The demo lives in `packages/demo`. It is a small Vite app that shows the web component at work.
 
 ## Run the demo
@@ -14,6 +18,8 @@ bun run dev
 ```
 
 Open `http://localhost:5173` in your browser.
+
+[Back to Top](#demo)
 
 ## What the demo shows
 
@@ -35,6 +41,8 @@ Your answer about occupation on the Preferences page decides where you go next:
 
 On the right side of the screen, a **live event log** shows the data for each `chat-page-submit` and `chat-form-complete` event as it happens. When the form is done, a **Start over** button appears. It clears the log and resets the form.
 
+[Back to Top](#demo)
+
 ## Settings
 
 The gear icon in the top-right corner opens a settings window. It lets you try the options from [Options](options.md): editing, hiding, typing speed, the thinking bubble, and more.
@@ -45,6 +53,8 @@ The gear icon in the top-right corner opens a settings window. It lets you try t
 
 Times for hiding and thinking are in seconds. Typing speed is in milliseconds per character. If the browser blocks `localStorage`, the window says so and the new settings last until you reload.
 
+[Back to Top](#demo)
+
 ## Build the demo for a website
 
 ```bash
@@ -52,6 +62,8 @@ cd packages/demo
 bun run build   # files are written to packages/demo/dist/
 bun run preview # view the built site on your computer
 ```
+
+[Back to Top](#demo)
 
 ## Host the demo on GitHub Pages
 
@@ -66,6 +78,8 @@ To turn it on, do this once:
 After the workflow runs, the demo is at [richardmcquiston01.github.io/chat-and-react](https://richardmcquiston01.github.io/chat-and-react/).
 
 The demo uses relative file paths, so it works from that sub-folder with no extra setup.
+
+[Back to Top](#demo)
 
 ## Run the demo with Docker
 
@@ -84,3 +98,9 @@ docker compose up --build
 ```
 
 Open `http://localhost:8080` in your browser. The demo runs on port **8080**.
+
+[Back to Top](#demo)
+
+---
+
+[Back to README](../README.md)

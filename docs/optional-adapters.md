@@ -1,5 +1,9 @@
 # Optional Adapters
 
+[Back to README](../README.md)
+
+| [Output adapters](#output-adapters) | [Error-log adapters](#error-log-adapters) | [Input adapters](#input-adapters) | [Using an adapter](#using-an-adapter) |
+
 The `@richardmcquiston01/chat-and-react-adapters` package has ready-made adapters. Install it next to the core package or the web component:
 
 ```bash
@@ -45,6 +49,8 @@ const adapter = new WebSocketOutputAdapter(socket);
 // If the socket is not open when emit() is called, nothing happens.
 ```
 
+[Back to Top](#optional-adapters)
+
 ## Error-log adapters
 
 **`WebhookErrorAdapter`** sends errors to a webhook URL:
@@ -68,6 +74,8 @@ await client.connect();
 const collection = client.db("mydb").collection("chat_errors");
 const adapter = new MongoDbErrorAdapter(collection);
 ```
+
+[Back to Top](#optional-adapters)
 
 ## Input adapters
 
@@ -101,6 +109,8 @@ const adapter = await MongoDbInputAdapter.create(collection, {
 });
 ```
 
+[Back to Top](#optional-adapters)
+
 ## Using an adapter
 
 Pass any adapter to `ChatController`:
@@ -116,3 +126,9 @@ const controller = new ChatController({
 });
 controller.start();
 ```
+
+[Back to Top](#optional-adapters)
+
+---
+
+[Back to README](../README.md)

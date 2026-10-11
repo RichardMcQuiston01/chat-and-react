@@ -1,5 +1,9 @@
 # Options
 
+[Back to README](../README.md)
+
+| [Editing answers](#editing-answers) | [Hiding finished questions and answers](#hiding-finished-questions-and-answers) | [Edit icon slot](#edit-icon-slot) | [Number keys](#number-keys) | [Keyboard](#keyboard) | [Typing effect](#typing-effect) | [Thinking bubble](#thinking-bubble) | [Continue button icon](#continue-button-icon) |
+
 You can set options in the schema under `x-chat-options`. You can also set them as attributes on the element. If you set both, the attribute wins.
 
 | Option              | Attribute             | Default | What it does                                                                                    |
@@ -33,6 +37,8 @@ Set `allowEdit` to `true` and every answer in the chat gets an Edit (✎) icon. 
 - **When a changed answer sends the form somewhere else:** the pages that followed, and their answers, are dropped from the chat. The form carries on from the new page.
 - **After the form is complete:** the Edit icons go away. Answers are final.
 
+[Back to Top](#options)
+
 ## Hiding finished questions and answers
 
 Two options let the chat tidy itself up as the user moves along. Each takes a number of milliseconds, and `0` (the default) keeps things on screen.
@@ -50,6 +56,8 @@ Hidden bubbles stay in the page, marked hidden, and the user can't edit an answe
 
 When bubbles stay on screen, each question and answer pair has a little space around it so the finished chat is easy to read. Change it with CSS, for example `chat-form::part(bubble-user) { margin-bottom: 24px; }`.
 
+[Back to Top](#options)
+
 ## Edit icon slot
 
 The Edit icon is a pencil (✎) by default. To use your own, such as an icon from Font Awesome, put an element in the `edit-icon` slot:
@@ -62,14 +70,20 @@ The Edit icon is a pencil (✎) by default. To use your own, such as an icon fro
 
 Every answer needs its own icon, so the form places a copy of your element on each Edit button. The copy stays in your page, so your icon font and CSS still work. Your original element is never shown. You can also use `<template slot="edit-icon">` to hold the icon's markup. Style it with `chat-form::part(edit-icon)`.
 
+[Back to Top](#options)
+
 ## Number keys
 
 Radio buttons and checkboxes show a number next to each choice. Press the number to pick a radio choice, or to tick or untick a checkbox. This works for the first nine choices and is always on.
+
+[Back to Top](#options)
 
 ## Keyboard
 
 - **Enter** in a text box, dropdown, or multi-line box continues, just like clicking Continue.
 - **Shift+Enter** in a multi-line box adds a new line.
+
+[Back to Top](#options)
 
 ## Typing effect
 
@@ -78,6 +92,8 @@ Set `typingSpeed` to a number of milliseconds per character, for example `25`. E
 The whole question is still available to screen readers from the start. If a visitor has asked their device to reduce motion, questions appear at once.
 
 Questions you come back to by editing an answer always appear at once.
+
+[Back to Top](#options)
 
 ## Thinking bubble
 
@@ -102,6 +118,8 @@ You can also set it for one question in the schema with `x-chat-thinking`:
 - A number, such as `"x-chat-thinking": 1500`, sets the delay in milliseconds. Use `0` to turn thinking off for that question.
 - An object can set `delay` and `text`. Anything you leave out comes from the options above.
 
+[Back to Top](#options)
+
 ## Continue button icon
 
 The Continue button shows a small arrow. You can hide it, restyle it, or swap it for your own icon:
@@ -116,3 +134,9 @@ The Continue button shows a small arrow. You can hide it, restyle it, or swap it
   ```
 
 - **Restyle it:** `chat-form::part(btn-icon) { font-size: 1.2em; }`. See [Styling](styling.md).
+
+[Back to Top](#options)
+
+---
+
+[Back to README](../README.md)

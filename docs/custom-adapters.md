@@ -1,5 +1,9 @@
 # Custom Adapters
 
+[Back to README](../README.md)
+
+| [InputAdapter](#inputadapter) | [OutputAdapter](#outputadapter) | [ErrorLogAdapter](#errorlogadapter) | [Using your adapters](#using-your-adapters) |
+
 An adapter is a small piece of code that plugs into the library. You can write your own for three jobs: getting a schema in, sending events out, and logging errors.
 
 ## InputAdapter
@@ -17,6 +21,8 @@ const myAdapter: InputAdapter = {
 };
 ```
 
+[Back to Top](#custom-adapters)
+
 ## OutputAdapter
 
 Handles the `page:submit` and `form:complete` events. Use it to send them to a webhook, a WebSocket, an EventEmitter, or anywhere else.
@@ -30,6 +36,8 @@ const myAdapter: OutputAdapter = {
   },
 };
 ```
+
+[Back to Top](#custom-adapters)
 
 ## ErrorLogAdapter
 
@@ -48,8 +56,16 @@ const myAdapter: ErrorLogAdapter = {
 };
 ```
 
+[Back to Top](#custom-adapters)
+
 ## Using your adapters
 
 If you use `@richardmcquiston01/chat-and-react-core` on its own, pass your adapters to `ChatController`. See [Headless Usage](headless-usage.md).
 
 Don't want to write your own? Try the [Optional Adapters](optional-adapters.md).
+
+[Back to Top](#custom-adapters)
+
+---
+
+[Back to README](../README.md)

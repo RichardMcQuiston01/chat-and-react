@@ -1,5 +1,9 @@
 # Schema Format
 
+[Back to README](../README.md)
+
+| [Page branching](#page-branching) | [Question visibility](#question-visibility) | [Thinking before a question](#thinking-before-a-question) | [Input types](#input-types) |
+
 A schema is a JSON file that describes your form. It follows JSON Schema Draft-07 and adds some extra keywords that start with `x-chat-`.
 
 ```json
@@ -52,6 +56,8 @@ Use `"**FORM_COMPLETED**"` as the `destination_id` to end the form.
 ]
 ```
 
+[Back to Top](#schema-format)
+
 ## Question visibility
 
 Sometimes you only want to show a question in certain cases. Add `x-chat-condition` with a [JsonLogic](https://jsonlogic.com/) rule:
@@ -67,6 +73,8 @@ Sometimes you only want to show a question in certain cases. Add `x-chat-conditi
 
 This question only shows if the user answered `initial_answer`.
 
+[Back to Top](#schema-format)
+
 ## Thinking before a question
 
 Add `x-chat-thinking` to a question to show a "thinking" bubble before it appears. See [Options](options.md#thinking-bubble). The Schema Builder has fields for it on each question.
@@ -80,6 +88,8 @@ Add `x-chat-thinking` to a question to show a "thinking" bubble before it appear
 }
 ```
 
+[Back to Top](#schema-format)
+
 ## Input types
 
 Set `x-chat-input` to one of these:
@@ -91,3 +101,9 @@ Set `x-chat-input` to one of these:
 | `dropdown`     | A `<select>` list. Choices come from `enum`     |
 | `radio`        | Radio buttons. Choices come from `enum`         |
 | `checkbox`     | Checkboxes. Choices come from `enum`. Pick many |
+
+[Back to Top](#schema-format)
+
+---
+
+[Back to README](../README.md)

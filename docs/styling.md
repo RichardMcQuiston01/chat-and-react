@@ -1,5 +1,9 @@
 # Styling
 
+[Back to README](../README.md)
+
+| [CSS custom properties](#css-custom-properties) | [CSS parts](#css-parts) | [CSS class reference](#css-class-reference) |
+
 The `<chat-form>` element uses Shadow DOM. This keeps its styles separate from the rest of your page. You can still change how it looks in two ways: CSS custom properties and CSS parts.
 
 ## CSS custom properties
@@ -16,6 +20,8 @@ chat-form {
   --car-font: system-ui, sans-serif;
 }
 ```
+
+[Back to Top](#styling)
 
 ## CSS parts
 
@@ -45,6 +51,8 @@ chat-form::part(edit-icon) {
 }
 ```
 
+[Back to Top](#styling)
+
 ## CSS class reference
 
 The element uses a standard set of class names. You can target them from a CSS layer or with `::slotted()`.
@@ -58,3 +66,9 @@ The element uses a standard set of class names. You can target them from a CSS l
 | `car-input-wrap`   | Input wrapper      |
 | `car-input`        | Input element      |
 | `car-btn-submit`   | Submit button      |
+
+[Back to Top](#styling)
+
+---
+
+[Back to README](../README.md)

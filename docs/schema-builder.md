@@ -1,5 +1,9 @@
 # Schema Builder
 
+[Back to README](../README.md)
+
+| [Run the Schema Builder](#run-the-schema-builder) | [What you can do](#what-you-can-do) | [Build the Schema Builder for a website](#build-the-schema-builder-for-a-website) |
+
 The Schema Builder lives in `packages/schema-builder`. It is a visual editor made with Vite and React 18. You can create, edit, import, and export `chat-and-react` schemas without writing JSON by hand.
 
 ## Run the Schema Builder
@@ -14,6 +18,8 @@ bun run dev
 ```
 
 Open `http://localhost:5173` in your browser. If that port is busy, the number may go up by one.
+
+[Back to Top](#schema-builder)
 
 ## What you can do
 
@@ -30,6 +36,8 @@ Open `http://localhost:5173` in your browser. If that port is busy, the number m
 | **Export**                 | Download `schema.json`. The schema is checked first, and the file is only saved if it is valid                                                  |
 | **JSON preview**           | A drawer at the bottom shows your JSON as you work. You can open and close it                                                                   |
 
+[Back to Top](#schema-builder)
+
 ## Build the Schema Builder for a website
 
 ```bash
@@ -37,3 +45,9 @@ cd packages/schema-builder
 bun run build   # files are written to packages/schema-builder/dist/
 bun run preview # view the built site on your computer
 ```
+
+[Back to Top](#schema-builder)
+
+---
+
+[Back to README](../README.md)
