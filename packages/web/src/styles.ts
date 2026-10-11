@@ -88,9 +88,46 @@ export function getStyles(): string {
   box-sizing: border-box;
 }
 
+/* Space between bubbles in the chat history. An answer bubble carries the extra
+   gap that separates one question / answer pair from the next, so the pairs stay
+   apart even when the question bubbles have been hidden. */
+.car-messages > .car-bubble {
+  margin-bottom: 6px;
+}
+
+.car-messages > .car-bubble--user {
+  margin-bottom: 16px;
+}
+
+/* Hidden bubbles shrink away instead of leaving a gap that snaps shut. */
+.car-bubble--collapsing {
+  max-height: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 0;
+  padding-bottom: 0;
+  overflow: hidden;
+  transition:
+    max-height 0.3s ease,
+    margin 0.3s ease,
+    padding 0.3s ease,
+    opacity 0.3s ease,
+    transform 0.2s ease;
+}
+
 .car-bubble--fading {
   opacity: 0;
-  transition: opacity 0.3s ease;
+}
+
+.car-bubble--pop {
+  opacity: 0;
+  transform: scale(0.8);
+  transform-origin: left center;
+  transition-duration: 0.2s;
+}
+
+.car-bubble--user.car-bubble--pop {
+  transform-origin: right center;
 }
 
 .car-bubble--user .car-edit {
@@ -110,7 +147,7 @@ export function getStyles(): string {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .car-bubble--fading {
+  .car-bubble--collapsing {
     transition: none;
   }
 

@@ -10,6 +10,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `autoHideAnswers` option (attribute `auto-hide-answers`): hides each answer after a delay, so a finished question and its answer can both leave the screen
+- `hideAnimation` option (attribute `hide-animation`): `fade` (default), `pop` or `none`. Hidden bubbles now also collapse the space they took up instead of leaving a gap that snaps shut
 - `typingSpeed` option (attribute `typing-speed`): types each question onto the screen, in milliseconds per character. `0` shows it at once. Click the question to skip. Screen readers get the full text immediately, and reduced-motion users get no animation
 - `thinkingDelay` and `thinkingText` options (attributes `thinking-delay`, `thinking-text`): a "thinking" bubble with animated dots (or your text) before each question, and `x-chat-thinking` on a question to override it for that question
 - Continue button icon: a default arrow in a `continue-icon` slot so pages can supply their own icon-font icon, a `btn-icon` part for styling, and a `showContinueIcon` option (attribute `show-continue-icon`) to hide it
@@ -24,6 +26,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Question and answer pairs in the chat history have space between them, including when the question bubbles are hidden and only answers remain
 - Pressing Enter in a dropdown acts like Continue
 - A question left blank shows "(no answer)" in the chat history
 

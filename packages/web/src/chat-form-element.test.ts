@@ -1011,3 +1011,133 @@ describe('<chat-form> typing and thinking', () => {
     expect(shadow.querySelector('.car-page')).not.toBeNull();
   });
 });
+
+describe('<chat-form> hiding answered questions and answers', () => {
+  let el: HTMLElement;
+
+  afterEach(() => {
+    vi.useRealTimers();
+    el?.remove();
+  });
+
+  const twoQuestionSchema = JSON.stringify({
+    'x-chat-version': '1',
+    'x-chat-pages': [{
+      id: 'p1', title: 'P1',
+      questions: [
+        { id: 'a', type: 'string', 'x-chat-input': 'text', title: 'First?' },
+        { id: 'b', type: 'string', 'x-chat-input': 'text', title: 'Second?' },
+      ],
+      branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
+    }],
+  });
+
+  function answerFirst(shadow: ShadowRoot): { question: HTMLElement; answer: HTMLElement } {
+    (shadow.querySelector('input') as HTMLInputElement).value = 'one';
+    shadow.querySelector('[part="submit-btn"]')!.dispatchEvent(new Event('click'));
+    const question = Array.from(shadow.querySelectorAll('[part="bubble-bot"]')).find(
+      (b) => b.textContent === 'First?',
+    ) as HTMLElement;
+    const answer = shadow.querySelector('[part="bubble-user"]') as HTMLElement;
+    return { question, answer };
+  }
+
+  it('keeps answers on screen when only questions are set to hide', () => {
+    vi.useFakeTimers();
+    el = mount(schemaWithOptions(twoQuestionSchema, { autoHideQuestions: 500 }));
+    const { question, answer } = answerFirst(getShadow(el));
+    vi.advanceTimersByTime(2000);
+    expect(question.hidden).toBe(true);
+    expect(answer.hidden).toBe(false);
+  });
+
+  it('hides the answer after autoHideAnswers, so the finished pair disappears', () => {
+    vi.useFakeTimers();
+    el = mount(
+      schemaWithOptions(twoQuestionSchema, { autoHideQuestions: 500, autoHideAnswers: 1500 }),
+    );
+    const { question, answer } = answerFirst(getShadow(el));
+
+    vi.advanceTimersByTime(900);
+    expect(question.hidden).toBe(true);
+    expect(answer.hidden).toBe(false);
+
+    vi.advanceTimersByTime(1000);
+    expect(answer.hidden).toBe(true);
+    expect(answer.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('fades by default: fading class first, then hidden', () => {
+    vi.useFakeTimers();
+    el = mount(schemaWithOptions(twoQuestionSchema, { autoHideAnswers: 100 }));
+    const { answer } = answerFirst(getShadow(el));
+
+    vi.advanceTimersByTime(100);
+    expect(answer.classList.contains('car-bubble--fading')).toBe(true);
+    expect(answer.classList.contains('car-bubble--collapsing')).toBe(true);
+    expect(answer.hidden).toBe(false);
+
+    vi.advanceTimersByTime(300);
+    expect(answer.hidden).toBe(true);
+  });
+
+  it('pops off with hideAnimation "pop", a little faster than a fade', () => {
+    vi.useFakeTimers();
+    el = mount(
+      schemaWithOptions(twoQuestionSchema, { autoHideAnswers: 100, hideAnimation: 'pop' }),
+    );
+    const { answer } = answerFirst(getShadow(el));
+
+    vi.advanceTimersByTime(100);
+    expect(answer.classList.contains('car-bubble--pop')).toBe(true);
+    expect(answer.classList.contains('car-bubble--fading')).toBe(false);
+
+    vi.advanceTimersByTime(200);
+    expect(answer.hidden).toBe(true);
+  });
+
+  it('hides at once with hideAnimation "none"', () => {
+    vi.useFakeTimers();
+    el = mount(
+      schemaWithOptions(twoQuestionSchema, { autoHideAnswers: 100, hideAnimation: 'none' }),
+    );
+    const { answer } = answerFirst(getShadow(el));
+
+    vi.advanceTimersByTime(100);
+    expect(answer.hidden).toBe(true);
+    expect(answer.classList.contains('car-bubble--fading')).toBe(false);
+  });
+
+  it('lets the auto-hide-answers and hide-animation attributes override the schema', () => {
+    vi.useFakeTimers();
+    el = document.createElement('chat-form');
+    el.setAttribute(
+      'schema',
+      schemaWithOptions(twoQuestionSchema, { autoHideAnswers: 60_000, hideAnimation: 'fade' }),
+    );
+    el.setAttribute('auto-hide-answers', '100');
+    el.setAttribute('hide-animation', 'none');
+    document.body.appendChild(el);
+    const { answer } = answerFirst(getShadow(el));
+
+    vi.advanceTimersByTime(100);
+    expect(answer.hidden).toBe(true);
+  });
+
+  it('ignores a hide-animation value it does not know', () => {
+    vi.useFakeTimers();
+    el = document.createElement('chat-form');
+    el.setAttribute('schema', schemaWithOptions(twoQuestionSchema, { autoHideAnswers: 100 }));
+    el.setAttribute('hide-animation', 'explode');
+    document.body.appendChild(el);
+    const { answer } = answerFirst(getShadow(el));
+
+    vi.advanceTimersByTime(100);
+    expect(answer.classList.contains('car-bubble--fading')).toBe(true);
+  });
+
+  it('marks the history list so completed pairs can be spaced apart', () => {
+    el = mount(twoQuestionSchema);
+    expect(getShadow(el).querySelector('[part="message-list"]')?.classList.contains('car-messages')).toBe(true);
+  });
+});

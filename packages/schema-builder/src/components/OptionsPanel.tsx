@@ -57,6 +57,39 @@ export function OptionsPanel({ schema, dispatch }: Props) {
         <input
           type="number"
           min={0}
+          step={1}
+          value={(opts.autoHideAnswers ?? 0) / 1000}
+          onChange={(event) =>
+            dispatch({
+              type: 'UPDATE_OPTIONS',
+              patch: { autoHideAnswers: Math.max(0, Math.round(Number(event.target.value) * 1000)) },
+            })
+          }
+          aria-label="Hide answers this many seconds after they are given (0 keeps them)"
+        />
+        Hide answers after (seconds, 0 = never)
+      </label>
+      <label className="checkbox-row">
+        <select
+          value={opts.hideAnimation ?? 'fade'}
+          onChange={(event) =>
+            dispatch({
+              type: 'UPDATE_OPTIONS',
+              patch: { hideAnimation: event.target.value as 'fade' | 'pop' | 'none' },
+            })
+          }
+          aria-label="How hidden questions and answers leave the screen"
+        >
+          <option value="fade">Fade out</option>
+          <option value="pop">Pop off</option>
+          <option value="none">Disappear at once</option>
+        </select>
+        Hide animation
+      </label>
+      <label className="checkbox-row">
+        <input
+          type="number"
+          min={0}
           step={5}
           value={opts.typingSpeed ?? 0}
           onChange={(event) =>

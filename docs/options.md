@@ -9,6 +9,8 @@ You can set options in the schema under `x-chat-options`. You can also set them 
 | `autoComplete`      | `auto-complete`       | `true`  | When `false`, every input gets `autocomplete="off"`                                             |
 | `allowEdit`         | `allow-edit`          | `false` | Shows an Edit icon on each answer so users can change it                                        |
 | `autoHideQuestions` | `auto-hide-questions` | `0`     | Hides each answered question after this many milliseconds. `0` keeps them                       |
+| `autoHideAnswers`   | `auto-hide-answers`   | `0`     | Hides each answer after this many milliseconds. `0` keeps them                                  |
+| `hideAnimation`     | `hide-animation`      | `fade`  | How hidden bubbles leave: `fade`, `pop`, or `none` (at once)                                    |
 | `typingSpeed`       | `typing-speed`        | `0`     | Types each question onto the screen, this many milliseconds per character. `0` shows it at once |
 | `thinkingDelay`     | `thinking-delay`      | `0`     | Shows a "thinking" bubble for this many milliseconds before each question. `0` turns it off     |
 | `thinkingText`      | `thinking-text`       | empty   | Text for the thinking bubble. Empty shows animated dots                                         |
@@ -31,9 +33,22 @@ Set `allowEdit` to `true` and every answer in the chat gets an Edit (✎) icon. 
 - **When a changed answer sends the form somewhere else:** the pages that followed, and their answers, are dropped from the chat. The form carries on from the new page.
 - **After the form is complete:** the Edit icons go away. Answers are final.
 
-## Hiding answered questions
+## Hiding finished questions and answers
 
-Set `autoHideQuestions` to a number of milliseconds, for example `5000`. Each question bubble fades out that long after you answer it. Your answers stay on screen, so you can still edit them.
+Two options let the chat tidy itself up as the user moves along. Each takes a number of milliseconds, and `0` (the default) keeps things on screen.
+
+- `autoHideQuestions` hides each question bubble that long after it is answered. The answers stay, so the chat becomes a short list of what the user said.
+- `autoHideAnswers` hides each answer that long after it is given. Set both to the same number to make a finished question and its answer leave together.
+
+`hideAnimation` chooses how they leave:
+
+- `fade` (the default): the bubble fades out while the space it took up closes.
+- `pop`: the bubble shrinks away quickly, a little faster than a fade.
+- `none`: the bubble is gone at once.
+
+Hidden bubbles stay in the page, marked hidden, and the user can't edit an answer that is hidden. If you want people to be able to change answers, leave `autoHideAnswers` at `0`.
+
+When bubbles stay on screen, each question and answer pair has a little space around it so the finished chat is easy to read. Change it with CSS, for example `chat-form::part(bubble-user) { margin-bottom: 24px; }`.
 
 ## Number keys
 
