@@ -26,7 +26,7 @@ chat-form::part(bubble-bot) {
   /* bot message bubbles */
 }
 chat-form::part(bubble-user) {
-  /* user reply bubbles */
+  /* user reply bubbles. Their bottom margin is the gap between question and answer pairs */
 }
 chat-form::part(input) {
   /* input elements */

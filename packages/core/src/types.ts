@@ -47,6 +47,9 @@ export interface ChatPage {
   branching: BranchingRule[];
 }
 
+/** How a bubble leaves the screen when it is hidden: fade out, shrink away ("pop"), or vanish at once. */
+export type HideAnimation = 'fade' | 'pop' | 'none';
+
 export interface ChatOptions {
   userResumable: boolean;
   localStorage: boolean;
@@ -55,6 +58,10 @@ export interface ChatOptions {
   allowEdit: boolean;
   /** Milliseconds to wait before hiding an answered question bubble. 0 keeps them visible. */
   autoHideQuestions: number;
+  /** Milliseconds to wait before hiding an answer bubble once its question is answered. 0 keeps them visible. */
+  autoHideAnswers: number;
+  /** How hidden bubbles leave the screen. */
+  hideAnimation: HideAnimation;
   /** Milliseconds per character when question text is "typed" onto the screen. 0 shows it at once. */
   typingSpeed: number;
   /** Milliseconds to show a "thinking" bubble before each question. 0 turns it off. */

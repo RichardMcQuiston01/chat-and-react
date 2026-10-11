@@ -1,4 +1,9 @@
-import type { AnswerMap, ChatPage, ChatQuestion } from '@richardmcquiston01/chat-and-react-core';
+import type {
+  AnswerMap,
+  ChatPage,
+  ChatQuestion,
+  HideAnimation,
+} from '@richardmcquiston01/chat-and-react-core';
 
 /** Called when the user clicks the Edit icon on an answered question. */
 export type EditHandler = (routeIndex: number, questionId: string) => void;
@@ -6,8 +11,9 @@ export type EditHandler = (routeIndex: number, questionId: string) => void;
 /** Options choices are numbered 1-9 so they can be picked with the number keys. */
 const MAX_NUMBERED_OPTIONS = 9;
 
-/** Time the fade-out lasts before a hidden bubble is removed from the layout. */
+/** Time each hide animation lasts before the bubble is removed from the layout. */
 const HIDE_FADE_MS = 300;
+const HIDE_POP_MS = 200;
 
 /** What to show in place of a question while the "bot" is thinking. */
 export interface ThinkingConfig {
@@ -54,6 +60,7 @@ export class Renderer {
     this.chat.setAttribute('part', 'container');
 
     this.messageList = root.ownerDocument.createElement('div');
+    this.messageList.className = 'car-messages';
     this.messageList.setAttribute('part', 'message-list');
 
     this.chat.appendChild(this.messageList);
@@ -353,19 +360,20 @@ export class Renderer {
    * answer is updated in place instead, so an edited answer keeps its position.
    *
    * @param routeIndex - Position of the page in the controller's route.
-   * @returns The question bubble when a new pair was added, otherwise null.
+   * @returns The new question and answer bubbles, or nulls when an existing
+   * answer was updated.
    */
   recordAnswer(
     routeIndex: number,
     questionId: string,
     questionTitle: string,
     answerText: string,
-  ): HTMLElement | null {
+  ): { question: HTMLElement | null; answer: HTMLElement | null } {
     const existing = this.findUserBubble(routeIndex, questionId);
     if (existing) {
       const textEl = existing.querySelector('.car-bubble-text');
       if (textEl) textEl.textContent = answerText;
-      return null;
+      return { question: null, answer: null };
     }
 
     const doc = this.root.ownerDocument;
@@ -395,7 +403,7 @@ export class Renderer {
     }
 
     this.messageList.appendChild(answerBubble);
-    return questionBubble;
+    return { question: questionBubble, answer: answerBubble };
   }
 
   /** Removes every history bubble that belongs to a page after the given route index. */
@@ -406,15 +414,33 @@ export class Renderer {
   }
 
   /**
-   * Fades a bubble out and then takes it out of the layout. The bubble stays in
-   * the DOM, hidden, so screen readers and the page structure stay consistent.
+   * Hides a bubble and then takes it out of the layout. The bubble stays in the
+   * DOM, marked hidden, so the page structure stays consistent.
+   *
+   * @param animation - `fade` fades it out, `pop` shrinks it away quickly, and
+   * `none` hides it at once. Fade and pop also collapse the space it took up.
    */
-  hideBubble(bubble: HTMLElement): void {
-    bubble.classList.add('car-bubble--fading');
+  hideBubble(bubble: HTMLElement, animation: HideAnimation = 'fade'): void {
     bubble.setAttribute('aria-hidden', 'true');
-    this.root.ownerDocument.defaultView?.setTimeout(() => {
+    const view = this.root.ownerDocument.defaultView;
+    if (animation === 'none' || !view) {
       bubble.hidden = true;
-    }, HIDE_FADE_MS);
+      return;
+    }
+
+    // Pin the current height so it can animate down to nothing.
+    bubble.style.maxHeight = `${bubble.offsetHeight}px`;
+    void bubble.offsetHeight;
+    bubble.classList.add(
+      'car-bubble--collapsing',
+      animation === 'pop' ? 'car-bubble--pop' : 'car-bubble--fading',
+    );
+    view.setTimeout(
+      () => {
+        bubble.hidden = true;
+      },
+      animation === 'pop' ? HIDE_POP_MS : HIDE_FADE_MS,
+    );
   }
 
   private findUserBubble(routeIndex: number, questionId: string): HTMLElement | null {

@@ -27,6 +27,8 @@ const DEFAULT_OPTIONS: ChatOptions = {
   autoComplete: true,
   allowEdit: false,
   autoHideQuestions: 0,
+  autoHideAnswers: 0,
+  hideAnimation: 'fade',
   typingSpeed: 0,
   thinkingDelay: 0,
   thinkingText: '',

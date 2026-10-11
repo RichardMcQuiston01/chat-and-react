@@ -4,6 +4,7 @@ import type {
   ChatEvent,
   AnswerMap,
   ChatOptions,
+  HideAnimation,
 } from '@richardmcquiston01/chat-and-react-core';
 import { AdapterRegistry } from './adapter-registry.js';
 import { Renderer } from './renderer.js';
@@ -117,6 +118,8 @@ export class ChatFormElement extends HTMLElement {
 
   private allowEdit = false;
   private autoHideMs = 0;
+  private autoHideAnswersMs = 0;
+  private hideAnimation: HideAnimation = 'fade';
   private typingSpeed = 0;
   private thinkingDelay = 0;
   private thinkingText = '';
@@ -239,6 +242,11 @@ export class ChatFormElement extends HTMLElement {
     set('allowEdit', flag('allow-edit'));
     set('showContinueIcon', flag('show-continue-icon'));
     set('autoHideQuestions', milliseconds('auto-hide-questions'));
+    set('autoHideAnswers', milliseconds('auto-hide-answers'));
+    const animationAttr = this.getAttribute('hide-animation')?.trim().toLowerCase();
+    if (animationAttr === 'fade' || animationAttr === 'pop' || animationAttr === 'none') {
+      set('hideAnimation', animationAttr);
+    }
     set('typingSpeed', milliseconds('typing-speed'));
     set('thinkingDelay', milliseconds('thinking-delay'));
     set('thinkingText', this.getAttribute('thinking-text') ?? undefined);
@@ -251,6 +259,8 @@ export class ChatFormElement extends HTMLElement {
     const options = this.controller.getOptions();
     this.allowEdit = options.allowEdit;
     this.autoHideMs = options.autoHideQuestions;
+    this.autoHideAnswersMs = options.autoHideAnswers;
+    this.hideAnimation = options.hideAnimation;
     this.typingSpeed = options.typingSpeed;
     this.thinkingDelay = options.thinkingDelay;
     this.thinkingText = options.thinkingText;
@@ -452,7 +462,7 @@ export class ChatFormElement extends HTMLElement {
     // because the title bubble is only shown on the first step.
     if (hasMoreQuestions && !this.pageTitleLogged && this.editingRouteIndex === null && page?.title) {
       const titleBubble = this.renderer.appendBotBubble(page.title, routeIndex);
-      this.scheduleHide(titleBubble);
+      this.scheduleHide(titleBubble, this.autoHideMs);
       this.pageTitleLogged = true;
     }
 
@@ -463,8 +473,9 @@ export class ChatFormElement extends HTMLElement {
       if (value === undefined) continue;
       const joined = Array.isArray(value) ? value.join(', ') : value;
       const display = joined === '' ? NO_ANSWER_TEXT : joined;
-      const questionBubble = this.renderer.recordAnswer(routeIndex, q.id, q.title, display);
-      if (questionBubble) this.scheduleHide(questionBubble);
+      const { question, answer } = this.renderer.recordAnswer(routeIndex, q.id, q.title, display);
+      if (question) this.scheduleHide(question, this.autoHideMs);
+      if (answer) this.scheduleHide(answer, this.autoHideAnswersMs);
     }
 
     // Remove the input area before moving on (so form:complete listeners
@@ -491,13 +502,13 @@ export class ChatFormElement extends HTMLElement {
     }
   }
 
-  /** Hides an answered question bubble after the configured delay, if one is set. */
-  private scheduleHide(bubble: HTMLElement): void {
-    if (this.autoHideMs <= 0) return;
+  /** Hides a bubble after the given delay in milliseconds. A delay of 0 or less keeps it. */
+  private scheduleHide(bubble: HTMLElement, delayMs: number): void {
+    if (delayMs <= 0) return;
     const timerId = window.setTimeout(() => {
       this.hideTimers.delete(timerId);
-      this.renderer?.hideBubble(bubble);
-    }, this.autoHideMs);
+      this.renderer?.hideBubble(bubble, this.hideAnimation);
+    }, delayMs);
     this.hideTimers.add(timerId);
   }
 
