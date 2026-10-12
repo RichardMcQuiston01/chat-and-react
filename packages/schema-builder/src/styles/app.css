@@ -212,6 +212,23 @@ body {
   border-top: 1px solid var(--border);
   margin-top: auto;
 }
+.option-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.35rem 0;
+  font-size: 0.85rem;
+}
+.option-field input,
+.option-field select {
+  width: 100%;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font: inherit;
+  background: var(--surface);
+  color: var(--text);
+}
 .checkbox-row {
   display: flex;
   align-items: center;
