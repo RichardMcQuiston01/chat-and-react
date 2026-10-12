@@ -15,8 +15,10 @@ export function PageList({ schema, selectedIndex, dispatch }: Props) {
       <div className="page-list-header">Pages</div>
       <ul className="page-list-items">
         {pages.map((page, i) => (
+          // The id is editable, so an id-based key would remount the row as the user types.
           <li
-            key={page.id + i}
+            // biome-ignore lint/suspicious/noArrayIndexKey: the cards hold no state of their own
+            key={i}
             className={`page-list-item${i === selectedIndex ? ' page-list-item--active' : ''}`}
           >
             <button

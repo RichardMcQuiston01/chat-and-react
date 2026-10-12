@@ -312,6 +312,17 @@ body {
 .field--sm {
   flex: 0 0 110px;
 }
+/* A <fieldset> used as a field: drop the browser's border and padding. */
+fieldset.field {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+legend.field-label {
+  padding: 0;
+  margin-bottom: 0.25rem;
+}
 .field-label {
   font-size: 0.72rem;
   font-weight: 600;

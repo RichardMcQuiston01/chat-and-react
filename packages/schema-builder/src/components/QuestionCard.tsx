@@ -1,4 +1,5 @@
 import type { ChatInputType, ChatQuestion } from '@richardmcquiston01/chat-and-react-core';
+import { useId } from 'react';
 import type { BuilderAction } from '../reducer.js';
 import { buildThinking, readThinking } from '../schema-helpers.js';
 
@@ -22,6 +23,8 @@ export function QuestionCard({
   ruleNames,
   dispatch,
 }: Props) {
+  const uid = useId();
+
   function update(patch: Partial<ChatQuestion>) {
     dispatch({ type: 'UPDATE_QUESTION', pageIndex, questionIndex, patch });
   }
@@ -87,8 +90,11 @@ export function QuestionCard({
     <div className="card question-card">
       <div className="card-row">
         <div className="field">
-          <label className="field-label">ID</label>
+          <label className="field-label" htmlFor={`${uid}-id`}>
+            ID
+          </label>
           <input
+            id={`${uid}-id`}
             className="field-input"
             value={question.id}
             onChange={(e) => update({ id: e.target.value })}
@@ -96,8 +102,11 @@ export function QuestionCard({
           />
         </div>
         <div className="field">
-          <label className="field-label">Input type</label>
+          <label className="field-label" htmlFor={`${uid}-input-type`}>
+            Input type
+          </label>
           <select
+            id={`${uid}-input-type`}
             className="field-input"
             value={question['x-chat-input']}
             onChange={(e) => handleInputTypeChange(e.target.value as ChatInputType)}
@@ -154,8 +163,11 @@ export function QuestionCard({
       </div>
 
       <div className="field">
-        <label className="field-label">Title</label>
+        <label className="field-label" htmlFor={`${uid}-title`}>
+          Title
+        </label>
         <input
+          id={`${uid}-title`}
           className="field-input"
           value={question.title}
           onChange={(e) => update({ title: e.target.value })}
@@ -165,8 +177,11 @@ export function QuestionCard({
 
       {isTextType && (
         <div className="field">
-          <label className="field-label">Placeholder</label>
+          <label className="field-label" htmlFor={`${uid}-placeholder`}>
+            Placeholder
+          </label>
           <input
+            id={`${uid}-placeholder`}
             className="field-input"
             value={question['x-chat-placeholder'] ?? ''}
             onChange={(e) => update({ 'x-chat-placeholder': e.target.value || undefined })}
@@ -176,12 +191,16 @@ export function QuestionCard({
       )}
 
       {isOptionType && (
-        <div className="field">
-          <label className="field-label">Options</label>
+        <fieldset className="field">
+          <legend className="field-label">Options</legend>
           {optionValues.map((val, i) => (
+            // Options are plain strings with no id, and each row is a controlled input with no
+            // state of its own, so the index is a safe key.
+            // biome-ignore lint/suspicious/noArrayIndexKey: see above
             <div key={i} className="option-row">
               <input
                 className="field-input"
+                aria-label={`Option ${i + 1}`}
                 value={val}
                 onChange={(e) => updateOption(i, e.target.value)}
                 placeholder={`Option ${i + 1}`}
@@ -198,11 +217,11 @@ export function QuestionCard({
           <button type="button" className="btn btn-ghost btn-sm" onClick={addOption}>
             + Add option
           </button>
-        </div>
+        </fieldset>
       )}
 
-      <div className="field">
-        <label className="field-label">Thinking before this question</label>
+      <fieldset className="field">
+        <legend className="field-label">Thinking before this question</legend>
         <input
           className="field-input field-input--sm"
           type="number"
@@ -220,11 +239,14 @@ export function QuestionCard({
           placeholder="Thinking text (empty = animated dots)"
           aria-label="Text for the thinking bubble. Leave empty for animated dots"
         />
-      </div>
+      </fieldset>
 
       <div className="field">
-        <label className="field-label">Condition</label>
+        <label className="field-label" htmlFor={`${uid}-condition`}>
+          Condition
+        </label>
         <select
+          id={`${uid}-condition`}
           className="field-input field-input--sm"
           value={conditionMode}
           onChange={(e) => handleConditionMode(e.target.value as 'none' | 'ref')}
@@ -235,6 +257,7 @@ export function QuestionCard({
         {conditionMode === 'ref' && (
           <select
             className="field-input field-input--sm"
+            aria-label="Named rule to use as this question's condition"
             value={(question['x-chat-condition'] as { ref: string })?.ref ?? ''}
             onChange={(e) => update({ 'x-chat-condition': { ref: e.target.value } })}
           >
