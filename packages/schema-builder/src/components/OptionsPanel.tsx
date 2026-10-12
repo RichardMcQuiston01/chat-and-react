@@ -35,7 +35,8 @@ export function OptionsPanel({ schema, dispatch }: Props) {
           </label>
         );
       })}
-      <label className="checkbox-row">
+      <label className="option-field">
+        <span>Hide answered questions after (seconds, 0 = never)</span>
         <input
           type="number"
           min={0}
@@ -51,9 +52,9 @@ export function OptionsPanel({ schema, dispatch }: Props) {
           }
           aria-label="Hide answered questions after this many seconds (0 keeps them)"
         />
-        Hide answered questions after (seconds, 0 = never)
       </label>
-      <label className="checkbox-row">
+      <label className="option-field">
+        <span>Hide answers after (seconds, 0 = never)</span>
         <input
           type="number"
           min={0}
@@ -69,9 +70,9 @@ export function OptionsPanel({ schema, dispatch }: Props) {
           }
           aria-label="Hide answers this many seconds after they are given (0 keeps them)"
         />
-        Hide answers after (seconds, 0 = never)
       </label>
-      <label className="checkbox-row">
+      <label className="option-field">
+        <span>Hide animation</span>
         <select
           value={opts.hideAnimation ?? 'fade'}
           onChange={(event) =>
@@ -86,9 +87,9 @@ export function OptionsPanel({ schema, dispatch }: Props) {
           <option value="pop">Pop off</option>
           <option value="none">Disappear at once</option>
         </select>
-        Hide animation
       </label>
-      <label className="checkbox-row">
+      <label className="option-field">
+        <span>Typing speed (ms per character, 0 = off)</span>
         <input
           type="number"
           min={0}
@@ -102,9 +103,9 @@ export function OptionsPanel({ schema, dispatch }: Props) {
           }
           aria-label="Typing speed in milliseconds per character (0 shows questions at once)"
         />
-        Typing speed (ms per character, 0 = off)
       </label>
-      <label className="checkbox-row">
+      <label className="option-field">
+        <span>Thinking time before each question (seconds, 0 = off)</span>
         <input
           type="number"
           min={0}
@@ -118,9 +119,9 @@ export function OptionsPanel({ schema, dispatch }: Props) {
           }
           aria-label="Show a thinking bubble for this many seconds before each question (0 turns it off)"
         />
-        Thinking time before each question (seconds, 0 = off)
       </label>
-      <label className="checkbox-row">
+      <label className="option-field">
+        <span>Thinking text</span>
         <input
           type="text"
           value={opts.thinkingText ?? ''}
@@ -130,7 +131,6 @@ export function OptionsPanel({ schema, dispatch }: Props) {
           }
           aria-label="Text for the thinking bubble. Leave empty for animated dots"
         />
-        Thinking text
       </label>
     </div>
   );
