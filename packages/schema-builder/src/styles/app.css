@@ -148,11 +148,6 @@ body {
   display: flex;
   align-items: center;
 }
-.page-list-item--active .page-list-label {
-  background: #ede9fe;
-  color: var(--accent);
-  font-weight: 600;
-}
 .page-list-label {
   flex: 1;
   display: flex;
@@ -165,6 +160,11 @@ body {
   text-align: left;
   font-size: 0.85rem;
   color: var(--text);
+}
+.page-list-item--active .page-list-label {
+  background: #ede9fe;
+  color: var(--accent);
+  font-weight: 600;
 }
 .page-list-label:hover {
   background: var(--surface-2);
