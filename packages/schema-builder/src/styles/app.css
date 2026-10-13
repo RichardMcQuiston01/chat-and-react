@@ -509,3 +509,43 @@ legend.field-label {
   border-color: var(--danger);
   background: var(--error-bg);
 }
+
+/* ── Narrow screens: stack the sidebar above the editor and let the page scroll ── */
+@media (max-width: 720px) {
+  .toolbar {
+    height: auto;
+    min-height: 52px;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+  }
+  .toolbar-actions {
+    flex-wrap: wrap;
+  }
+  .layout {
+    grid-template-columns: 1fr;
+    height: auto;
+    overflow: visible;
+  }
+  .sidebar {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    overflow-y: visible;
+  }
+  .options-panel {
+    margin-top: 0;
+  }
+  .main {
+    overflow-y: visible;
+    padding: 1rem;
+  }
+  .card-row {
+    flex-wrap: wrap;
+  }
+  .card-row > .field {
+    flex: 1 1 100%;
+  }
+  .card-actions {
+    margin-left: auto;
+  }
+}
