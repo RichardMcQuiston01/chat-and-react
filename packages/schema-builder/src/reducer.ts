@@ -160,7 +160,9 @@ export function reducer(state: BuilderState, action: BuilderAction): BuilderStat
     case 'ADD_BRANCHING_RULE': {
       const pages = updatePage(state.schema['x-chat-pages'], action.pageIndex, (p) => {
         const rules = [...p.branching];
-        const terminal = rules.pop()!;
+        const terminal = rules.pop();
+        // A page always ends with its catch-all rule. Without one there is nothing to put new rules before.
+        if (!terminal) return p;
         rules.push(
           { type: 'if', form_element: '', value: '', destination_id: '**FORM_COMPLETED**' },
           terminal,

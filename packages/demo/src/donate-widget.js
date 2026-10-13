@@ -18,7 +18,7 @@
   function readDismissed() {
     try {
       return window.localStorage.getItem(STORAGE_KEY) === '1';
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -26,7 +26,7 @@
   function writeDismissed() {
     try {
       window.localStorage.setItem(STORAGE_KEY, '1');
-    } catch (error) {
+    } catch {
       /* Non-fatal: the card just reappears next load. */
     }
   }

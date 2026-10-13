@@ -91,11 +91,13 @@ export class ChatController {
       this.handleFatal({ code: 'ADAPTER_ERROR', message: 'InputAdapter.transform() threw', cause });
     }
 
+    let schema: ChatSchema;
     try {
-      this.schema = parseSchema(raw!);
+      schema = parseSchema(raw);
     } catch (e) {
       this.handleFatal(e as ChatError);
     }
+    this.schema = schema;
 
     if (!this.session.isStorageAvailable) {
       this.config.errorAdapter.log({
@@ -106,7 +108,7 @@ export class ChatController {
 
     // Defaults, then the schema, then overrides passed in by the host (for
     // example element attributes).
-    const schemaOpts = this.schema!['x-chat-options'] ?? {};
+    const schemaOpts = schema['x-chat-options'] ?? {};
     this.options = {
       ...DEFAULT_OPTIONS,
       ...stripUndefined(schemaOpts),
@@ -116,7 +118,7 @@ export class ChatController {
     if (this.options.userResumable) {
       const saved = this.session.loadProgress();
       if (saved) {
-        const page = this.schema!['x-chat-pages'].find((p) => p.id === saved.currentPageId);
+        const page = schema['x-chat-pages'].find((p) => p.id === saved.currentPageId);
         if (page) {
           this.allAnswers = saved.answers;
           this.currentPage = page;
@@ -125,7 +127,7 @@ export class ChatController {
       }
     }
 
-    this.currentPage = this.schema!['x-chat-pages'][0];
+    this.currentPage = schema['x-chat-pages'][0];
   }
 
   /**
@@ -298,8 +300,12 @@ export class ChatController {
    * @param listener - The callback to invoke when the event fires.
    */
   on(event: EventName, listener: Listener): void {
-    if (!this.listeners.has(event)) this.listeners.set(event, new Set());
-    this.listeners.get(event)!.add(listener);
+    let listenersForEvent = this.listeners.get(event);
+    if (!listenersForEvent) {
+      listenersForEvent = new Set();
+      this.listeners.set(event, listenersForEvent);
+    }
+    listenersForEvent.add(listener);
   }
 
   /**

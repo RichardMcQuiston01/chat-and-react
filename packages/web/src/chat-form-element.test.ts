@@ -46,7 +46,17 @@ function mount(schema: string): HTMLElement {
 }
 
 function getShadow(el: HTMLElement): ShadowRoot {
-  return el.shadowRoot!;
+  if (!el.shadowRoot) {
+    throw new Error('Expected <chat-form> to have an open shadow root, but it has none');
+  }
+  return el.shadowRoot;
+}
+
+/** Finds an element the test depends on, and fails with the selector if it is missing. */
+function requireElement<T extends Element = Element>(root: ParentNode, selector: string): T {
+  const found = root.querySelector<T>(selector);
+  if (!found) throw new Error(`Expected an element matching "${selector}", but none was found`);
+  return found;
 }
 
 describe('<chat-form>', () => {
@@ -78,7 +88,7 @@ describe('<chat-form>', () => {
     const shadow = getShadow(el);
     const input = shadow.querySelector('input') as HTMLInputElement;
     input.value = 'Alice';
-    shadow.querySelector('[part="submit-btn"]')!.dispatchEvent(new Event('click'));
+    requireElement(shadow, '[part="submit-btn"]').dispatchEvent(new Event('click'));
     const userBubble = shadow.querySelector('[part="bubble-user"]');
     expect(userBubble?.textContent).toBe('Alice');
     expect(shadow.querySelector('[part="input-area"]')).toBeNull();
@@ -149,7 +159,7 @@ describe('<chat-form>', () => {
 
     function press(shadow: ShadowRoot, key: 'click' | 'Enter'): void {
       if (key === 'click') {
-        shadow.querySelector('[part="submit-btn"]')!.dispatchEvent(new Event('click'));
+        requireElement(shadow, '[part="submit-btn"]').dispatchEvent(new Event('click'));
         return;
       }
       (shadow.querySelector('input') as HTMLInputElement).dispatchEvent(
@@ -233,7 +243,7 @@ describe('<chat-form>', () => {
     el = mount(minimalSchema);
     const shadow = getShadow(el);
     (shadow.querySelector('input') as HTMLInputElement).value = 'Alice';
-    shadow.querySelector('[part="submit-btn"]')!.dispatchEvent(new Event('click'));
+    requireElement(shadow, '[part="submit-btn"]').dispatchEvent(new Event('click'));
     const history = Array.from(
       shadow.querySelectorAll('[part="bubble-bot"], [part="bubble-user"]'),
     ).map((b) => b.textContent);
@@ -246,7 +256,7 @@ describe('<chat-form>', () => {
     const events: CustomEvent[] = [];
     el.addEventListener('chat-form-complete', (e) => events.push(e as CustomEvent));
     (shadow.querySelector('input') as HTMLInputElement).value = 'Alice';
-    shadow.querySelector('[part="submit-btn"]')!.dispatchEvent(new Event('click'));
+    requireElement(shadow, '[part="submit-btn"]').dispatchEvent(new Event('click'));
     expect(events).toHaveLength(1);
     expect(events[0].detail.allAnswers).toEqual({ q1: 'Alice' });
   });
@@ -258,7 +268,7 @@ describe('<chat-form>', () => {
     el.addEventListener('chat-page-submit', (e) => pageEvents.push(e as CustomEvent));
     const radio = shadow.querySelector('input[value="A"]') as HTMLInputElement;
     radio.checked = true;
-    shadow.querySelector('[part="submit-btn"]')!.dispatchEvent(new Event('click'));
+    requireElement(shadow, '[part="submit-btn"]').dispatchEvent(new Event('click'));
     expect(pageEvents).toHaveLength(1);
     expect(pageEvents[0].detail.pageId).toBe('p1');
   });
@@ -268,7 +278,7 @@ describe('<chat-form>', () => {
     const shadow = getShadow(el);
     const radio = shadow.querySelector('input[value="A"]') as HTMLInputElement;
     radio.checked = true;
-    shadow.querySelector('[part="submit-btn"]')!.dispatchEvent(new Event('click'));
+    requireElement(shadow, '[part="submit-btn"]').dispatchEvent(new Event('click'));
     const history = Array.from(
       shadow.querySelectorAll('[part="bubble-bot"], [part="bubble-user"]'),
     ).map((b) => b.textContent);
@@ -374,7 +384,7 @@ describe('<chat-form> number keys', () => {
 
     key(boxes[0], '1');
     key(boxes[0], '3');
-    shadow.querySelector('[part="submit-btn"]')!.dispatchEvent(new Event('click'));
+    requireElement(shadow, '[part="submit-btn"]').dispatchEvent(new Event('click'));
     expect(completed[0].detail.allAnswers).toEqual({ topics: ['Tech', 'Sport'] });
   });
 
@@ -406,7 +416,7 @@ describe('<chat-form> auto-hide questions', () => {
 
   function answerFirst(shadow: ShadowRoot): void {
     (shadow.querySelector('input') as HTMLInputElement).value = 'Alice';
-    shadow.querySelector('[part="submit-btn"]')!.dispatchEvent(new Event('click'));
+    requireElement(shadow, '[part="submit-btn"]').dispatchEvent(new Event('click'));
   }
 
   const twoStepSchema = JSON.stringify({
@@ -543,12 +553,12 @@ describe('<chat-form> editing answers', () => {
 
   function pickAndContinue(shadow: ShadowRoot, value: string): void {
     (shadow.querySelector(`input[value="${value}"]`) as HTMLInputElement).checked = true;
-    shadow.querySelector('[part="submit-btn"]')!.dispatchEvent(new Event('click'));
+    requireElement(shadow, '[part="submit-btn"]').dispatchEvent(new Event('click'));
   }
 
   function typeAndContinue(shadow: ShadowRoot, value: string): void {
     (shadow.querySelector('input') as HTMLInputElement).value = value;
-    shadow.querySelector('[part="submit-btn"]')!.dispatchEvent(new Event('click'));
+    requireElement(shadow, '[part="submit-btn"]').dispatchEvent(new Event('click'));
   }
 
   function activeLabels(shadow: ShadowRoot): (string | null)[] {
@@ -690,7 +700,7 @@ describe('<chat-form> attribute overrides', () => {
     el.addEventListener('chat-page-submit', (e) => submits.push(e as CustomEvent));
 
     (shadow.querySelector('input[value="A"]') as HTMLInputElement).checked = true;
-    shadow.querySelector('[part="submit-btn"]')!.dispatchEvent(new Event('click'));
+    requireElement(shadow, '[part="submit-btn"]').dispatchEvent(new Event('click'));
     expect(submits).toHaveLength(0);
   });
 
@@ -703,7 +713,7 @@ describe('<chat-form> attribute overrides', () => {
     el.addEventListener('chat-page-submit', (e) => submits.push(e as CustomEvent));
 
     (shadow.querySelector('input[value="A"]') as HTMLInputElement).checked = true;
-    shadow.querySelector('[part="submit-btn"]')!.dispatchEvent(new Event('click'));
+    requireElement(shadow, '[part="submit-btn"]').dispatchEvent(new Event('click'));
     expect(submits).toHaveLength(1);
   });
 
@@ -1070,7 +1080,7 @@ describe('<chat-form> typing and thinking', () => {
     vi.advanceTimersByTime(200);
 
     (shadow.querySelector('input') as HTMLInputElement).value = 'one';
-    shadow.querySelector('[part="submit-btn"]')!.dispatchEvent(new Event('click'));
+    requireElement(shadow, '[part="submit-btn"]').dispatchEvent(new Event('click'));
     expect(label(shadow).classList.contains('car-bubble--thinking')).toBe(true);
     vi.advanceTimersByTime(200);
     expect(label(shadow).textContent).toBe('Second?');
@@ -1128,7 +1138,7 @@ describe('<chat-form> hiding answered questions and answers', () => {
 
   function answerFirst(shadow: ShadowRoot): { question: HTMLElement; answer: HTMLElement } {
     (shadow.querySelector('input') as HTMLInputElement).value = 'one';
-    shadow.querySelector('[part="submit-btn"]')!.dispatchEvent(new Event('click'));
+    requireElement(shadow, '[part="submit-btn"]').dispatchEvent(new Event('click'));
     const question = Array.from(shadow.querySelectorAll('[part="bubble-bot"]')).find(
       (b) => b.textContent === 'First?',
     ) as HTMLElement;
@@ -1274,7 +1284,7 @@ describe('<chat-form> Edit icon slot', () => {
 
   function answer(shadow: ShadowRoot, value: string): void {
     (shadow.querySelector('input') as HTMLInputElement).value = value;
-    shadow.querySelector('[part="submit-btn"]')!.dispatchEvent(new Event('click'));
+    requireElement(shadow, '[part="submit-btn"]').dispatchEvent(new Event('click'));
   }
 
   /** Direct children of the element that have the given attribute. */
@@ -1307,7 +1317,7 @@ describe('<chat-form> Edit icon slot', () => {
     expect(buttons).toHaveLength(2);
     expect(buttons.map(slottedText)).toEqual(['E', 'E']);
 
-    const slotNames = buttons.map((b) => b.querySelector('slot')!.getAttribute('name'));
+    const slotNames = buttons.map((b) => requireElement(b, 'slot').getAttribute('name'));
     expect(new Set(slotNames).size).toBe(2);
   });
 

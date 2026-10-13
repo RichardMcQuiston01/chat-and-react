@@ -100,7 +100,6 @@ export class ChatFormElement extends HTMLElement {
   private session: SessionManager | null = null;
   private storage: InstanceStorage | null = null;
   private renderer: Renderer | null = null;
-  private shadow: ShadowRoot | null = null;
   private readonly registry = new AdapterRegistry();
 
   /** Visible questions of the current page, asked one at a time. */
@@ -128,7 +127,6 @@ export class ChatFormElement extends HTMLElement {
 
   connectedCallback(): void {
     const shadow = this.attachShadow({ mode: 'open' });
-    this.shadow = shadow;
 
     const style = shadow.ownerDocument.createElement('style');
     style.textContent = getStyles();
@@ -149,7 +147,6 @@ export class ChatFormElement extends HTMLElement {
     this.session = null;
     this.storage = null;
     this.renderer = null;
-    this.shadow = null;
   }
 
   /** Parses the schema attribute and wires up the ChatController. */
