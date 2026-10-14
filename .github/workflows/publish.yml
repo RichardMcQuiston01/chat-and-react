@@ -100,3 +100,31 @@ jobs:
               npm publish "$TARBALL" --access public --provenance
             fi
           done
+
+  # Replaces GitHub's auto-generated release notes (the list of every merged pull request) with
+  # this version's CHANGELOG section. Notes written by hand are left alone.
+  release-notes:
+    needs: publish
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Use the CHANGELOG as the release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          node scripts/release-notes.mjs "$VERSION" > "$RUNNER_TEMP/notes.md"
+          BODY="$(gh release view "$GITHUB_REF_NAME" --json body --jq .body)"
+          FIRST_LINE="${BODY%%$'\n'*}"
+          FIRST_LINE="${FIRST_LINE%$'\r'}"
+          if [ -z "$BODY" ] || [ "$FIRST_LINE" = "## What's Changed" ]; then
+            gh release edit "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/notes.md"
+            echo "Replaced the auto-generated release notes with the CHANGELOG section for $VERSION"
+          else
+            echo "The release notes were written by hand; leaving them as they are"
+          fi

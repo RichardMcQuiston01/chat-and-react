@@ -62,6 +62,7 @@ The three published packages (`@richardmcquiston01/chat-and-react-core`, `-adapt
 1. Move the CHANGELOG's `[Unreleased]` entries under a new `## [x.y.z] — date` heading and bump `version` in `packages/core`, `packages/adapters` and `packages/web`.
 2. Run `bun install`, `bun run build`, `bun run typecheck`, `bun run test` and `bun run lint`.
 3. Publish by creating a GitHub release tagged `vx.y.z` (the tag must match every package version). The `Publish` workflow (secret `NPM_TOKEN`) runs lint, typecheck, tests and the build, packs each package with `bun pm pack`, and publishes **core first**, then `adapters` and `web`, with `npm publish` on the tarball so it gets provenance. It skips a package that is already on npm, so a failed run can be re-run. It can also be started by hand from the Actions tab (with an optional dry run). Never run `npm publish` from a package directory: it leaves `workspace:*` in the published `package.json`, which npm cannot install (0.5.0 of `-adapters` and `chat-and-react` were published that way). To publish by hand instead, use `bun publish` from each package directory, core first.
+4. After publishing, the same workflow replaces GitHub's auto-generated release notes (the list of every merged pull request) with the version's CHANGELOG section, using `scripts/release-notes.mjs`. Notes written by hand are left alone. To do it for an older release: `node scripts/release-notes.mjs 0.7.0 | gh release edit v0.7.0 --notes-file -`.
 
 ## Key Design Constraints
 

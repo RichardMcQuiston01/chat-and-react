@@ -27,6 +27,9 @@ jobs:
 
       - run: bun run lint
 
+      - name: Test the release scripts
+        run: node --test "scripts/*.test.mjs"
+
       # web and the type checks read core's built output, so build core first
       - run: bun run build
         working-directory: packages/core
