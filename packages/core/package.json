@@ -46,6 +46,7 @@
   },
   "dependencies": {
     "@richardmcquiston01/error-log-adapter": "^0.1.0",
+    "@richardmcquiston01/storage-adapters": "^0.3.0",
     "json-logic-js": "^2.0.2"
   },
   "devDependencies": {

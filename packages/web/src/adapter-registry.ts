@@ -2,6 +2,7 @@ import type {
   ErrorLogAdapter,
   InputAdapter,
   OutputAdapter,
+  StorageAdapter,
 } from '@richardmcquiston01/chat-and-react-core';
 import {
   BrowserEventAdapter,
@@ -13,6 +14,7 @@ export class AdapterRegistry {
   private inputAdapter: InputAdapter = new IdentityInputAdapter();
   private outputAdapter: OutputAdapter = new BrowserEventAdapter();
   private errorAdapter: ErrorLogAdapter = new ConsoleErrorAdapter();
+  private storageAdapter: StorageAdapter | null = null;
 
   setInputAdapter(adapter: InputAdapter): void {
     this.inputAdapter = adapter;
@@ -24,6 +26,14 @@ export class AdapterRegistry {
 
   setErrorAdapter(adapter: ErrorLogAdapter): void {
     this.errorAdapter = adapter;
+  }
+
+  /**
+   * Saves progress through a `StorageAdapter` (for example `localStorageAdapter()`,
+   * or one that talks to your server). `null` goes back to the built-in storage.
+   */
+  setStorageAdapter(adapter: StorageAdapter | null): void {
+    this.storageAdapter = adapter;
   }
 
   getInputAdapter(): InputAdapter {
@@ -38,9 +48,14 @@ export class AdapterRegistry {
     return this.errorAdapter;
   }
 
+  getStorageAdapter(): StorageAdapter | null {
+    return this.storageAdapter;
+  }
+
   reset(): void {
     this.inputAdapter = new IdentityInputAdapter();
     this.outputAdapter = new BrowserEventAdapter();
     this.errorAdapter = new ConsoleErrorAdapter();
+    this.storageAdapter = null;
   }
 }

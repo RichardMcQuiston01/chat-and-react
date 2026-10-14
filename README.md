@@ -145,6 +145,7 @@ bun run typecheck
 | [Styling](docs/styling.md)                     | Change colors, fonts, and shapes                                  |
 | [Custom Adapters](docs/custom-adapters.md)     | Write your own input, output, and error-log adapters              |
 | [Optional Adapters](docs/optional-adapters.md) | Use ready-made adapters for webhooks, WebSockets, MongoDB, MySQL  |
+| [Storage Adapters](docs/storage-adapters.md)   | Save progress somewhere other than `localStorage`, with conflict handling and cross-tab sync |
 | [Headless Usage](docs/headless-usage.md)       | Run the form logic in Node with no screen                         |
 | [Demo](docs/demo.md)                           | Run the example app, with or without Docker                       |
 | [Schema Builder](docs/schema-builder.md)       | Build schemas in a visual editor instead of writing JSON          |

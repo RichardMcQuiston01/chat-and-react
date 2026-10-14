@@ -1,5 +1,7 @@
+import { localStorageAdapter } from '@richardmcquiston01/chat-and-react-core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import './index.js'; // registers <chat-form>
+import type { ChatFormElement } from './chat-form-element.js';
 
 const minimalSchema = JSON.stringify({
   'x-chat-version': '1',
@@ -1365,5 +1367,44 @@ describe('<chat-form> Edit icon slot', () => {
     answer(shadow, 'three');
     expect(childrenWith(el, 'data-car-edit-icon')).toHaveLength(0);
     expect(childrenWith(el, 'slot')).toHaveLength(1);
+  });
+});
+
+describe('<chat-form> with a storage adapter', () => {
+  const mountWithAdapter = (schema: string): ChatFormElement => {
+    const element = document.createElement('chat-form') as ChatFormElement;
+    element.setAttribute('schema', schema);
+    element.setStorageAdapter(localStorageAdapter());
+    document.body.appendChild(element);
+    return element;
+  };
+
+  afterEach(() => {
+    document.body.innerHTML = '';
+    localStorage.clear();
+  });
+
+  it('shows nothing until the saved session has loaded, then renders the first question', async () => {
+    const element = mountWithAdapter(twoPageSchema);
+    await vi.waitFor(() =>
+      expect(element.shadowRoot?.querySelector('[part="input-area"]')).not.toBeNull(),
+    );
+    expect(element.shadowRoot?.textContent).toContain('Pick?');
+  });
+
+  it('resumes on the saved page after the element is recreated', async () => {
+    const first = mountWithAdapter(twoPageSchema);
+    const firstShadow = getShadow(first);
+    await vi.waitFor(() => expect(firstShadow.querySelector('input[type="radio"]')).not.toBeNull());
+    const radio = requireElement<HTMLInputElement>(firstShadow, 'input[type="radio"]');
+    radio.checked = true;
+    radio.dispatchEvent(new Event('change', { bubbles: true }));
+    requireElement(firstShadow, '[part="submit-btn"]').dispatchEvent(new Event('click'));
+    await vi.waitFor(() => expect(firstShadow.textContent).toContain('Tell us more'));
+    first.remove();
+
+    const second = mountWithAdapter(twoPageSchema);
+    await vi.waitFor(() => expect(second.shadowRoot?.textContent).toContain('Tell us more'));
+    expect(second.shadowRoot?.textContent).not.toContain('Pick?');
   });
 });
