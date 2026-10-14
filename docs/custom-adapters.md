@@ -41,17 +41,25 @@ const myAdapter: OutputAdapter = {
 
 ## ErrorLogAdapter
 
-Sends runtime errors to a place you choose.
+Sends runtime errors to a place you choose. The interface comes from [`@richardmcquiston01/error-log-adapter`](https://www.npmjs.com/package/@richardmcquiston01/error-log-adapter), which you can also use in your other projects.
+
+`log` returns a `Promise<ErrorLogResult>`. Catch your own failures and return `{ ok: false, error: "..." }` instead of throwing. The controller writes a failed result to `console.error`.
 
 ```ts
 import type {
   ErrorLogAdapter,
+  ErrorLogResult,
   ChatError,
 } from "@richardmcquiston01/chat-and-react-core";
 
 const myAdapter: ErrorLogAdapter = {
-  log(error: ChatError) {
-    myLogger.error(error.code, error.message, error.cause);
+  async log(error: ChatError): Promise<ErrorLogResult> {
+    try {
+      myLogger.error(error.code, error.message, error.cause);
+      return { ok: true };
+    } catch (cause) {
+      return { ok: false, error: `myLogger failed: ${String(cause)}` };
+    }
   },
 };
 ```

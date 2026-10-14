@@ -39,6 +39,8 @@ const adapter = new WebhookOutputAdapter("https://api.example.com/events", {
 - **`WebhookErrorAdapter`** — POST `ChatError` objects to a webhook URL
 - **`MongoDbErrorAdapter`** — insert `ChatError` objects into a MongoDB collection
 
+Both are re-exported from [`@richardmcquiston01/error-log-adapter`](https://www.npmjs.com/package/@richardmcquiston01/error-log-adapter).
+
 ## Input adapters
 
 - **`MySqlInputAdapter`** — static async `create()` factory; fetches a schema via a `mysql2`-compatible connection and caches it

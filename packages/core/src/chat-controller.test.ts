@@ -2,7 +2,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ChatController } from './chat-controller.js';
 import { SessionManager } from './session-manager.js';
-import type { ChatControllerConfig, ChatEvent } from './types.js';
+import type { ChatControllerConfig, ChatEvent, ErrorLogAdapter } from './types.js';
 
 function makeStorage() {
   const store: Record<string, string> = {};
@@ -492,5 +492,50 @@ describe('ChatController — editing earlier answers', () => {
     c.on('page:submit', listener);
     c.submitPage({ choice: 'A' });
     expect(listener).not.toHaveBeenCalled();
+  });
+});
+
+describe('ChatController — error logging', () => {
+  const badSchema = { 'x-chat-version': '99', 'x-chat-pages': [] };
+
+  it('passes a fatal error to the error adapter before throwing it', () => {
+    const log = vi.fn().mockResolvedValue({ ok: true });
+    const c = makeController(badSchema, { errorAdapter: { log } });
+    expect(() => c.start()).toThrow();
+    expect(log).toHaveBeenCalledOnce();
+    expect(log.mock.calls[0][0]).toMatchObject({ code: 'SCHEMA_INVALID' });
+  });
+
+  it('writes to console.error when the error adapter reports a failure', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const errorAdapter: ErrorLogAdapter = {
+      log: async () => ({ ok: false, error: 'sink down' }),
+    };
+    const c = makeController(badSchema, { errorAdapter });
+    expect(() => c.start()).toThrow();
+    await vi.waitFor(() => expect(spy).toHaveBeenCalled());
+    expect(spy.mock.calls[0][1]).toBe('sink down');
+    spy.mockRestore();
+  });
+
+  it('does not let an error adapter that throws or rejects replace the original error', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    for (const log of [
+      () => {
+        throw new Error('adapter exploded');
+      },
+      () => Promise.reject(new Error('adapter rejected')),
+    ]) {
+      const c = makeController(badSchema, { errorAdapter: { log } });
+      expect(() => c.start()).toThrow(expect.objectContaining({ code: 'SCHEMA_INVALID' }));
+    }
+    await vi.waitFor(() => expect(spy).toHaveBeenCalledTimes(2));
+    spy.mockRestore();
+  });
+
+  it('tolerates older custom adapters whose log returns nothing', () => {
+    const errorAdapter = { log: () => undefined } as unknown as ErrorLogAdapter;
+    const c = makeController(badSchema, { errorAdapter });
+    expect(() => c.start()).toThrow(expect.objectContaining({ code: 'SCHEMA_INVALID' }));
   });
 });

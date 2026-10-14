@@ -44,7 +44,7 @@ describe('AdapterRegistry', () => {
   });
 
   it('stores and retrieves a custom error adapter', () => {
-    const adapter: ErrorLogAdapter = { log: () => {} };
+    const adapter: ErrorLogAdapter = { log: async () => ({ ok: true }) };
     registry.setErrorAdapter(adapter);
     expect(registry.getErrorAdapter()).toBe(adapter);
   });
@@ -52,7 +52,7 @@ describe('AdapterRegistry', () => {
   it('reset() restores all adapters to defaults', () => {
     registry.setInputAdapter({ transform: (raw) => raw as ChatSchema });
     registry.setOutputAdapter({ emit: () => {} });
-    registry.setErrorAdapter({ log: () => {} });
+    registry.setErrorAdapter({ log: async () => ({ ok: true }) });
     registry.reset();
     expect(registry.getInputAdapter()).toBeInstanceOf(IdentityInputAdapter);
     expect(registry.getOutputAdapter()).toBeInstanceOf(BrowserEventAdapter);

@@ -1,7 +1,12 @@
-import type { ChatError, ErrorLogAdapter } from '../types.js';
+import {
+  ConsoleErrorAdapter as BaseConsoleErrorAdapter,
+  type ConsoleErrorOptions,
+} from '@richardmcquiston01/error-log-adapter';
+import type { ChatErrorCode } from '../types.js';
 
-export class ConsoleErrorAdapter implements ErrorLogAdapter {
-  log(error: ChatError): void {
-    console.error('[chat-and-react]', error);
+/** Writes errors to `console.error`, prefixed with `[chat-and-react]` unless overridden. */
+export class ConsoleErrorAdapter extends BaseConsoleErrorAdapter<ChatErrorCode> {
+  constructor(options: ConsoleErrorOptions = {}) {
+    super({ prefix: '[chat-and-react]', ...options });
   }
 }

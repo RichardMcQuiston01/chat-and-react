@@ -47,7 +47,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@richardmcquiston01/chat-and-react-core": "workspace:*"
+    "@richardmcquiston01/chat-and-react-core": "workspace:*",
+    "@richardmcquiston01/error-log-adapter": "^0.1.0"
   },
   "peerDependencies": {
     "mongodb": ">=5.0.0",
