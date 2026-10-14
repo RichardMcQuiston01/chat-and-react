@@ -45,6 +45,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@richardmcquiston01/error-log-adapter": "^0.1.0",
     "json-logic-js": "^2.0.2"
   },
   "devDependencies": {

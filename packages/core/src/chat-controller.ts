@@ -15,6 +15,7 @@ import type {
   ChatPage,
   ChatQuestion,
   ChatSchema,
+  ErrorLogResult,
   RouteEntry,
   SubmitOutcome,
 } from './types.js';
@@ -100,7 +101,7 @@ export class ChatController {
     this.schema = schema;
 
     if (!this.session.isStorageAvailable) {
-      this.config.errorAdapter.log({
+      this.logError({
         code: 'STORAGE_UNAVAILABLE',
         message: 'localStorage unavailable; running in memory-only mode',
       });
@@ -349,7 +350,7 @@ export class ChatController {
     try {
       return this.ruleEngine.evaluate(rule, this.answersForRules());
     } catch (e) {
-      this.config.errorAdapter.log(e as ChatError);
+      this.logError(e as ChatError);
       return false;
     }
   }
@@ -388,7 +389,7 @@ export class ChatController {
     try {
       this.config.outputAdapter.emit(event);
     } catch (cause) {
-      this.config.errorAdapter.log({
+      this.logError({
         code: 'ADAPTER_ERROR',
         message: `OutputAdapter.emit() threw for ${event.type}`,
         cause,
@@ -410,7 +411,31 @@ export class ChatController {
    * Used for unrecoverable errors (schema invalid, adapter failure on start).
    */
   private handleFatal(error: ChatError): never {
-    this.config.errorAdapter.log(error);
+    this.logError(error);
     throw error;
+  }
+
+  /**
+   * Sends the error to the error adapter without waiting for it. If the adapter
+   * reports a failure, rejects, or throws, that is written to `console.error` so
+   * the original error is never lost and the form keeps running.
+   */
+  private logError(entry: ChatError): void {
+    const reportFailure = (reason: unknown): void => {
+      console.error('[chat-and-react] ErrorLogAdapter failed to record an error:', reason, entry);
+    };
+    try {
+      // `Promise.resolve` also tolerates older custom adapters that return nothing.
+      void Promise.resolve(this.config.errorAdapter.log(entry)).then(
+        (result: ErrorLogResult | undefined): void => {
+          if (result?.ok === false) {
+            reportFailure(result.error);
+          }
+        },
+        reportFailure,
+      );
+    } catch (cause) {
+      reportFailure(cause);
+    }
   }
 }

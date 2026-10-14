@@ -53,6 +53,8 @@ const adapter = new WebSocketOutputAdapter(socket);
 
 ## Error-log adapters
 
+These come from [`@richardmcquiston01/error-log-adapter`](https://www.npmjs.com/package/@richardmcquiston01/error-log-adapter) and are re-exported here. `log` returns a result you can check, and a failing sink never throws. The package also has a `CompositeErrorAdapter` that sends errors to several sinks.
+
 **`WebhookErrorAdapter`** sends errors to a webhook URL:
 
 ```ts

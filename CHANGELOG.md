@@ -8,6 +8,12 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking:** `ErrorLogAdapter.log()` now returns `Promise<ErrorLogResult>` (`{ ok, error? }`) instead of `void`. The interface and the console, webhook and MongoDB adapters now come from the new [`@richardmcquiston01/error-log-adapter`](https://www.npmjs.com/package/@richardmcquiston01/error-log-adapter) package. Custom adapters need to return a result (adapters that return nothing still work at runtime). `ChatError` is now `ErrorLogEntry<ChatErrorCode>`
+- The controller writes to `console.error` if the error adapter reports a failure, rejects, or throws, so the original error is never lost
+- `WebhookErrorAdapter` now reports a non-2xx response as a failure, and `Error` causes are serialized so they survive JSON. Failure messages use the prefix `[error-log-adapter]`
+
 ### Added
 
 - `autoHideAnswers` option (attribute `auto-hide-answers`): hides each answer after a delay, so a finished question and its answer can both leave the screen

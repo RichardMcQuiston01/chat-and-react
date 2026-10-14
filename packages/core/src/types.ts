@@ -1,3 +1,9 @@
+import type {
+  ErrorLogAdapter as BaseErrorLogAdapter,
+  ErrorLogEntry,
+  ErrorLogResult,
+} from '@richardmcquiston01/error-log-adapter';
+
 export type AnswerMap = Record<string, string | string[]>;
 
 export type ChatInputType = 'text' | 'textarea' | 'dropdown' | 'radio' | 'checkbox';
@@ -120,11 +126,7 @@ export type ChatErrorCode =
   | 'ADAPTER_ERROR'
   | 'STORAGE_UNAVAILABLE';
 
-export interface ChatError {
-  code: ChatErrorCode;
-  message: string;
-  cause?: unknown;
-}
+export type ChatError = ErrorLogEntry<ChatErrorCode>;
 
 export interface InputAdapter {
   transform(raw: unknown): unknown;
@@ -134,9 +136,13 @@ export interface OutputAdapter {
   emit(event: ChatEvent): void;
 }
 
-export interface ErrorLogAdapter {
-  log(error: ChatError): void;
-}
+/**
+ * Routes `ChatError`s to a sink. `log` returns a result instead of throwing, so the
+ * caller can check `ok`. See `@richardmcquiston01/error-log-adapter`.
+ */
+export type ErrorLogAdapter = BaseErrorLogAdapter<ChatErrorCode>;
+
+export type { ErrorLogEntry, ErrorLogResult };
 
 export interface ChatControllerConfig {
   schema: unknown;

@@ -63,11 +63,12 @@ describe('BrowserEventAdapter', () => {
 });
 
 describe('ConsoleErrorAdapter', () => {
-  it('calls console.error with the error', () => {
+  it('calls console.error with the error and reports success', async () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const adapter = new ConsoleErrorAdapter();
     const error: ChatError = { code: 'SCHEMA_INVALID', message: 'bad schema' };
-    adapter.log(error);
+    const result = await adapter.log(error);
+    expect(result).toEqual({ ok: true });
     expect(spy).toHaveBeenCalledWith('[chat-and-react]', error);
     spy.mockRestore();
   });

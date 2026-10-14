@@ -45,7 +45,7 @@ Handles events emitted by the library. Two event types:
 The default OutputAdapter dispatches browser `CustomEvent`s. Custom adapters can target webhooks, WebSockets, or `EventEmitter`.
 
 ### ErrorLogAdapter
-Routes runtime errors to a sink. Default writes to a log file. Custom adapters can target SQL/NoSQL databases, webhooks, or AWS services.
+Routes runtime errors to a sink. The interface and the console, webhook, and MongoDB adapters come from the standalone `@richardmcquiston01/error-log-adapter` package. `log` returns a `Promise<ErrorLogResult>` that is checked, not thrown. The default writes to the console. Custom adapters can target SQL/NoSQL databases, webhooks, or AWS services.
 
 ## Session & Storage Behavior
 
