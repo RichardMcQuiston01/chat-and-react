@@ -41,3 +41,20 @@ jobs:
 
       # Build every package, to catch build-only failures
       - run: bun run build
+
+  # Runs the storage and error-log adapters in real Chromium tabs. A separate job keeps `check` fast.
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.x
+
+      - run: bun install --frozen-lockfile
+
+      - run: bunx playwright install --with-deps chromium
+        working-directory: packages/browser-tests
+
+      - run: bun run test:browser

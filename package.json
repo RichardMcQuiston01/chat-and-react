@@ -7,6 +7,7 @@
   "scripts": {
     "build": "bun run --filter '*' build",
     "test": "bun run --filter '*' test",
+    "test:browser": "bun run --filter chat-and-react-browser-tests test:browser",
     "typecheck": "bun run --filter '*' typecheck",
     "lint": "biome check --error-on-warnings .",
     "format": "biome check --write ."

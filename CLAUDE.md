@@ -16,6 +16,7 @@ bun run build         # Compile TypeScript
 bun run typecheck     # Type-check without emitting
 bun run test          # Run all tests
 bun run test -- -t "test name"   # Run a single test suite
+bun run test:browser # Run the browser tests in real Chromium (needs `bunx playwright install chromium` once; set CHROMIUM_PATH to use an installed Chromium)
 bun run lint          # Lint and check formatting with Biome
 bun run format        # Apply Biome fixes and formatting
 ```
