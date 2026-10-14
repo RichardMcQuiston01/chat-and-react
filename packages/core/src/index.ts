@@ -4,6 +4,14 @@ export type {
   StoreErrorCode,
   StoreResult,
 } from '@richardmcquiston01/storage-adapters';
+// `localStorageAdapter` lives in the storage-adapters package; re-exported so imports keep working.
+export type {
+  LocalStorageAdapterOptions,
+  StorageChangeEvent,
+  StorageEventTarget,
+  WebStorageLike,
+} from '@richardmcquiston01/storage-adapters/browser';
+export { localStorageAdapter } from '@richardmcquiston01/storage-adapters/browser';
 export { BrowserEventAdapter } from './adapters/browser-event-adapter.js';
 export { ConsoleErrorAdapter } from './adapters/console-error-adapter.js';
 export { IdentityInputAdapter } from './adapters/identity-input-adapter.js';
@@ -14,10 +22,4 @@ export type { SessionProgress, SessionStore, StorageBackend } from './session-ma
 export { SessionManager } from './session-manager.js';
 export type { AdapterSessionManagerOptions } from './storage/adapter-session-manager.js';
 export { AdapterSessionManager } from './storage/adapter-session-manager.js';
-export type {
-  LocalStorageAdapterOptions,
-  StorageEventTarget,
-  WebStorageLike,
-} from './storage/local-storage-adapter.js';
-export { localStorageAdapter } from './storage/local-storage-adapter.js';
 export * from './types.js';
