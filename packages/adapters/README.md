@@ -36,10 +36,18 @@ const adapter = new WebhookOutputAdapter("https://api.example.com/events", {
 
 ## Error-log adapters
 
-- **`WebhookErrorAdapter`** — POST `ChatError` objects to a webhook URL
-- **`MongoDbErrorAdapter`** — insert `ChatError` objects into a MongoDB collection
+- **`WebhookErrorAdapter`** — POST errors to a webhook URL
+- **`MongoDbErrorAdapter`** — insert errors into a MongoDB collection
+- **`JsonFileErrorAdapter`** / **`FlatFileErrorAdapter`** — write to a JSON or text file (Node, Bun)
+- **`SqliteErrorAdapter`** — insert into a SQLite table through any driver
+- **`WebStorageErrorAdapter`** / **`IndexedDbErrorAdapter`** — keep errors in the browser
+- **`CompositeErrorAdapter`** — send each error to several adapters
 
-Both are re-exported from [`@richardmcquiston01/error-log-adapter`](https://www.npmjs.com/package/@richardmcquiston01/error-log-adapter).
+All are re-exported from [`@richardmcquiston01/error-log-adapter`](https://www.npmjs.com/package/@richardmcquiston01/error-log-adapter).
+
+## Storage adapters
+
+- **`sqliteAdapter`**, **`fileAdapter`**, **`jsonFileAdapter`** — save form progress on a server, re-exported from [`@richardmcquiston01/storage-adapters`](https://www.npmjs.com/package/@richardmcquiston01/storage-adapters). See [Storage Adapters](https://github.com/RichardMcQuiston01/chat-and-react/blob/main/docs/storage-adapters.md).
 
 ## Input adapters
 

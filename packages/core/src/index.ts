@@ -4,14 +4,24 @@ export type {
   StoreErrorCode,
   StoreResult,
 } from '@richardmcquiston01/storage-adapters';
-// `localStorageAdapter` lives in the storage-adapters package; re-exported so imports keep working.
+// The browser storage adapters live in the storage-adapters package; re-exported here so
+// they can be imported from core. Server-side adapters (SQLite, files) are in the adapters
+// package.
 export type {
   LocalStorageAdapterOptions,
+  SessionStorageAdapterOptions,
   StorageChangeEvent,
   StorageEventTarget,
+  WebStorageAdapterOptions,
   WebStorageLike,
+  WebStorageName,
 } from '@richardmcquiston01/storage-adapters/browser';
-export { localStorageAdapter } from '@richardmcquiston01/storage-adapters/browser';
+export {
+  localStorageAdapter,
+  sessionStorageAdapter,
+} from '@richardmcquiston01/storage-adapters/browser';
+export type { IndexedDbAdapterOptions } from '@richardmcquiston01/storage-adapters/indexeddb';
+export { indexedDbAdapter } from '@richardmcquiston01/storage-adapters/indexeddb';
 export { BrowserEventAdapter } from './adapters/browser-event-adapter.js';
 export { ConsoleErrorAdapter } from './adapters/console-error-adapter.js';
 export { IdentityInputAdapter } from './adapters/identity-input-adapter.js';

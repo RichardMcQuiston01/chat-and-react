@@ -10,6 +10,21 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.7.0] — 2026-10-14
+
+### Added
+
+- More error-log adapters, re-exported from `@richardmcquiston01/chat-and-react-adapters` (from `error-log-adapter` 0.2.0): `JsonFileErrorAdapter`, `FlatFileErrorAdapter` (with rotation), `SqliteErrorAdapter`, `WebStorageErrorAdapter`, `IndexedDbErrorAdapter` and `CompositeErrorAdapter`, with the `createErrorLogStore` and `buildCreateErrorLogTableSql` helpers
+- More storage adapters (from `storage-adapters` 0.5.0): core re-exports `sessionStorageAdapter` and `indexedDbAdapter` next to `localStorageAdapter`, and the adapters package re-exports `sqliteAdapter`, `fileAdapter` and `jsonFileAdapter` for saving progress on a server. `nodeFileSystem()` is not re-exported because it imports `node:fs`; import it from `@richardmcquiston01/storage-adapters/file/node`
+- Docs: the adapters you can use for storage, and the new error-log adapters
+
+### Changed
+
+- Updated to `error-log-adapter` ^0.2.0 and `storage-adapters` ^0.5.0. `storage-adapters` 0.5.0 fixes `subscribe` in the browser adapters: a change to the other kind of storage under the same key (for example a `sessionStorage` write in an iframe) no longer notifies a `localStorageAdapter()` subscriber, so cross-tab sync no longer sees those false changes
+- `@richardmcquiston01/chat-and-react-adapters` now depends on `storage-adapters` as well as `error-log-adapter`
+
+---
+
 ## [0.6.0] — 2026-10-14
 
 ### Changed

@@ -2,7 +2,7 @@
 
 [Back to README](../README.md)
 
-| [Why use one](#why-use-one) | [In the web component](#in-the-web-component) | [Headless](#headless-usage) | [Several tabs](#several-tabs) | [Write your own](#write-your-own) |
+| [Why use one](#why-use-one) | [Adapters you can use](#adapters-you-can-use) | [In the web component](#in-the-web-component) | [Headless](#headless-usage) | [Several tabs](#several-tabs) | [Write your own](#write-your-own) |
 
 By default, progress is saved in `localStorage`. A storage adapter lets you save it somewhere else, like your server, or add retries and a memory fallback. Adapters follow the [`@richardmcquiston01/storage-adapters`](https://www.npmjs.com/package/@richardmcquiston01/storage-adapters) contract: an async key-value store that returns results you check instead of throwing.
 
@@ -11,6 +11,28 @@ By default, progress is saved in `localStorage`. A storage adapter lets you save
 - Save progress on your server so people can resume on another device.
 - Wrap storage with `withFallback`, `withRetry`, `withPrefix` and the other wrappers from the package.
 - Find out when saving fails. Failures go to your [error-log adapter](custom-adapters.md#errorlogadapter).
+
+[Back to Top](#storage-adapters)
+
+## Adapters you can use
+
+| Adapter | Saves to | Import from |
+| --- | --- | --- |
+| `localStorageAdapter()` | `localStorage` (survives closing the tab) | `chat-and-react-core` |
+| `sessionStorageAdapter()` | `sessionStorage` (lasts as long as the tab) | `chat-and-react-core` |
+| `indexedDbAdapter()` | IndexedDB (large values; other tabs hear about changes) | `chat-and-react-core` |
+| `sqliteAdapter({ database })` | a SQLite table, through `node:sqlite`, `bun:sqlite` or any driver | `chat-and-react-adapters` |
+| `fileAdapter({ directory, fileSystem })` | one file per key in a folder | `chat-and-react-adapters` |
+| `jsonFileAdapter({ path, fileSystem })` | one JSON file for all keys (best for small data) | `chat-and-react-adapters` |
+
+`fileAdapter` and `jsonFileAdapter` take a `fileSystem`. In Node, Bun or Deno, use `nodeFileSystem()` from `@richardmcquiston01/storage-adapters/file/node`. It isn't re-exported here because it imports `node:fs`. The file adapters are safe within one process only. Use `sqliteAdapter` when more than one process writes.
+
+```ts
+import { jsonFileAdapter } from "@richardmcquiston01/chat-and-react-adapters";
+import { nodeFileSystem } from "@richardmcquiston01/storage-adapters/file/node";
+
+const adapter = jsonFileAdapter({ path: "progress.json", fileSystem: nodeFileSystem() });
+```
 
 [Back to Top](#storage-adapters)
 
