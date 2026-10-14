@@ -1,0 +1,102 @@
+name: Publish
+
+# Publishes the three packages to npm when a GitHub release is published, or when run
+# by hand from the Actions tab. The release tag (for example v0.6.0) must match the
+# version in each package.json. Needs the NPM_TOKEN repository secret.
+#
+# Packages are packed with `bun pm pack`, which replaces `workspace:*` dependencies
+# with real versions, and the tarballs are published with `npm publish` so they get
+# provenance. Publishing with `npm publish` from a package directory would leave
+# `workspace:*` in the published package.json, which npm cannot install.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: Check and pack everything, but do not publish
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.x
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - run: bun install --frozen-lockfile
+
+      - run: bun run lint
+
+      # web and the type checks read core's built output, so build core first
+      - run: bun run build
+        working-directory: packages/core
+      - run: bun run build
+        working-directory: packages/web
+
+      - run: bun run typecheck
+      - run: bun run test
+
+      # Build every package, so each dist is current before packing
+      - run: bun run build
+
+      - name: Check versions
+        run: |
+          VERSION="$(node -p "require('./packages/core/package.json').version")"
+          for dir in core adapters web; do
+            PACKAGE_VERSION="$(node -p "require('./packages/$dir/package.json').version")"
+            if [ "$PACKAGE_VERSION" != "$VERSION" ]; then
+              echo "packages/$dir is at $PACKAGE_VERSION but packages/core is at $VERSION; all three must match" >&2
+              exit 1
+            fi
+          done
+          if [ "$GITHUB_EVENT_NAME" = "release" ] && [ "$GITHUB_REF_NAME" != "v$VERSION" ]; then
+            echo "Release tag $GITHUB_REF_NAME does not match package version v$VERSION" >&2
+            exit 1
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      # Core first: adapters and web depend on it.
+      - name: Pack and publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          DRY_RUN: ${{ inputs.dry-run }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/pack"
+          for dir in core adapters web; do
+            NAME="$(node -p "require('./packages/$dir/package.json').name")"
+            if npm view "$NAME@$VERSION" version >/dev/null 2>&1; then
+              echo "$NAME@$VERSION is already on npm; skipping"
+              continue
+            fi
+            (cd "packages/$dir" && bun pm pack --destination "$RUNNER_TEMP/pack")
+            SLUG="${NAME#@}"
+            TARBALL="$RUNNER_TEMP/pack/${SLUG//\//-}-$VERSION.tgz"
+            if tar -xOzf "$TARBALL" package/package.json | grep -q 'workspace:'; then
+              echo "$TARBALL still has a workspace: dependency; refusing to publish it" >&2
+              exit 1
+            fi
+            if [ "$DRY_RUN" = "true" ]; then
+              npm publish "$TARBALL" --access public --dry-run
+            else
+              npm publish "$TARBALL" --access public --provenance
+            fi
+          done
