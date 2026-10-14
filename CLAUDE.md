@@ -55,6 +55,15 @@ Routes runtime errors to a sink. The interface and the console, webhook, and Mon
 - `LocalStorage` (boolean option): when `true`, each input value is written to `localStorage` as the user types.
 - `AutoComplete` (boolean option): when `false`, all input elements render with `autocomplete="off"`.
 
+## Releasing
+
+The three published packages (`@richardmcquiston01/chat-and-react-core`, `-adapters`, and `@richardmcquiston01/chat-and-react`) share one version.
+
+1. Move the CHANGELOG's `[Unreleased]` entries under a new `## [x.y.z] — date` heading and bump `version` in `packages/core`, `packages/adapters` and `packages/web`.
+2. Run `bun install`, `bun run build`, `bun run typecheck`, `bun run test` and `bun run lint`.
+3. Publish **core first**, then `adapters` and `web`, from each package directory, with **`bun publish`**. Do not use `npm publish`: it leaves `workspace:*` in the published `package.json`, which npm cannot install (0.5.0 of `-adapters` and `chat-and-react` were published that way). `bun pm pack` shows what will be published; check that `dependencies` has real versions.
+4. Tag the merge commit `vx.y.z`.
+
 ## Key Design Constraints
 
 - **Framework-agnostic**: no dependency on React, Vue, Angular, etc.
