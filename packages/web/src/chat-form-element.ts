@@ -1,11 +1,18 @@
 import type {
   AnswerMap,
+  ChatError,
   ChatEvent,
   ChatOptions,
   ChatQuestion,
   HideAnimation,
+  SessionStore,
+  StorageAdapter,
 } from '@richardmcquiston01/chat-and-react-core';
-import { ChatController, SessionManager } from '@richardmcquiston01/chat-and-react-core';
+import {
+  AdapterSessionManager,
+  ChatController,
+  SessionManager,
+} from '@richardmcquiston01/chat-and-react-core';
 import { AdapterRegistry } from './adapter-registry.js';
 import type { ThinkingConfig } from './renderer.js';
 import { Renderer } from './renderer.js';
@@ -97,7 +104,7 @@ interface SuspendedPage {
 
 export class ChatFormElement extends HTMLElement {
   private controller: ChatController | null = null;
-  private session: SessionManager | null = null;
+  private session: SessionStore | null = null;
   private storage: InstanceStorage | null = null;
   private renderer: Renderer | null = null;
   private readonly registry = new AdapterRegistry();
@@ -124,6 +131,15 @@ export class ChatFormElement extends HTMLElement {
   private thinkingText = '';
   private showContinueIcon = true;
   private readonly hideTimers = new Set<number>();
+
+  /**
+   * Saves progress through a `StorageAdapter` instead of the built-in storage, for
+   * example `localStorageAdapter()` or one that talks to your server. Call it before the
+   * element is added to the page; the saved session is loaded when it connects.
+   */
+  setStorageAdapter(adapter: StorageAdapter | null): void {
+    this.registry.setStorageAdapter(adapter);
+  }
 
   connectedCallback(): void {
     const shadow = this.attachShadow({ mode: 'open' });
@@ -167,8 +183,49 @@ export class ChatFormElement extends HTMLElement {
       return;
     }
 
+    const storageAdapter: StorageAdapter | null = this.registry.getStorageAdapter();
+    if (storageAdapter) {
+      void this.initWithStorageAdapter(schema, storageAdapter);
+      return;
+    }
+
     this.storage = new InstanceStorage();
-    this.session = new SessionManager(this.storage);
+    this.startController(schema, new SessionManager(this.storage));
+  }
+
+  /**
+   * Loads the saved session from the storage adapter, then starts the controller. Nothing
+   * is shown until the saved session has been read, so a resumed form opens on the right page.
+   */
+  private async initWithStorageAdapter(schema: unknown, adapter: StorageAdapter): Promise<void> {
+    const session: AdapterSessionManager = await AdapterSessionManager.create(adapter, {
+      onError: (error: ChatError) => this.logError(error),
+    });
+    if (!this.renderer) {
+      // The element was removed while the saved session was loading.
+      session.dispose();
+      return;
+    }
+    this.startController(schema, session);
+  }
+
+  /** Sends an error to the registered error adapter; a failure there goes to the console. */
+  private logError(error: ChatError): void {
+    const reportFailure = (reason: unknown): void => {
+      console.error('[chat-and-react] ErrorLogAdapter failed to record an error:', reason, error);
+    };
+    try {
+      void Promise.resolve(this.registry.getErrorAdapter().log(error)).then((result) => {
+        if (result?.ok === false) reportFailure(result.error);
+      }, reportFailure);
+    } catch (cause) {
+      reportFailure(cause);
+    }
+  }
+
+  /** Creates the controller for `session`, starts it, and renders the first page. */
+  private startController(schema: unknown, session: SessionStore): void {
+    this.session = session;
 
     this.controller = new ChatController(
       {
@@ -370,8 +427,9 @@ export class ChatFormElement extends HTMLElement {
     }
 
     // Wire up per-keystroke localStorage saves when the option is enabled.
-    if (this.controller?.getOptions().localStorage && this.session && this.storage) {
-      const sessionId = this.session.getSessionId();
+    if (this.controller?.getOptions().localStorage && this.session) {
+      const session = this.session;
+      const sessionId = session.getSessionId();
       const storage = this.storage;
       inputArea
         .querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(
@@ -380,7 +438,13 @@ export class ChatFormElement extends HTMLElement {
         .forEach((el) => {
           const questionId = (el as HTMLElement).dataset['questionId'] ?? '';
           el.addEventListener('input', () => {
-            storage.setItem(`car:input:${sessionId}:${questionId}`, (el as HTMLInputElement).value);
+            const value = (el as HTMLInputElement).value;
+            if (storage) {
+              storage.setItem(`car:input:${sessionId}:${questionId}`, value);
+            } else {
+              // A storage adapter is in use: save through the session.
+              session.saveInput(questionId, value);
+            }
           });
         });
     }

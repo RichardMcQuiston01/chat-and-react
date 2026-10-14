@@ -18,7 +18,23 @@ const KEY_SESSION = 'car:session-id';
 const keyProgress = (id: string) => `car:progress:${id}`;
 const keyInput = (sessionId: string, questionId: string) => `car:input:${sessionId}:${questionId}`;
 
-export class SessionManager {
+/**
+ * What `ChatController` needs from session storage. `SessionManager` keeps it in a
+ * synchronous Web Storage object; `AdapterSessionManager` keeps it in a `StorageAdapter`.
+ */
+export interface SessionStore {
+  readonly isStorageAvailable: boolean;
+  getSessionId(): string;
+  saveProgress(currentPageId: string, answers: AnswerMap): void;
+  loadProgress(): SessionProgress | null;
+  saveInput(questionId: string, value: string | string[]): void;
+  loadInput(questionId: string): string | string[] | null;
+  clearAll(): void;
+  /** Stops listening for changes made elsewhere. Called when the controller is destroyed. */
+  dispose?(): void;
+}
+
+export class SessionManager implements SessionStore {
   private readonly sessionId: string;
   private readonly available: boolean;
 

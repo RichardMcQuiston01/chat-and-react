@@ -49,6 +49,7 @@ Routes runtime errors to a sink. The interface and the console, webhook, and Mon
 
 ## Session & Storage Behavior
 
+- Storage is pluggable: `SessionManager` (sync Web Storage, the default) and `AdapterSessionManager` (any `@richardmcquiston01/storage-adapters` `StorageAdapter`, loaded into memory by `create()` and saved in the background) both implement `SessionStore`. The web component uses an adapter set with `setStorageAdapter()`.
 - Each user gets a unique session ID stored in `localStorage`, submitted with every event/emit.
 - `UserResumable` (boolean option): when `true`, progress is persisted so the user can return and continue. When `false`, no progress is saved and page-submit events are suppressed.
 - `LocalStorage` (boolean option): when `true`, each input value is written to `localStorage` as the user types.

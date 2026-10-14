@@ -16,6 +16,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Storage adapters, using [`@richardmcquiston01/storage-adapters`](https://www.npmjs.com/package/@richardmcquiston01/storage-adapters): `AdapterSessionManager` saves progress through any `StorageAdapter` and works with the synchronous `ChatController` (`SessionStore` is the new interface it needs), `localStorageAdapter()` provides revisions and cross-tab change events, and `<chat-form>.setStorageAdapter()` / `AdapterRegistry.setStorageAdapter()` plug an adapter into the web component. Conflicting saves from two tabs are merged, and storage failures go to the error adapter. See [Storage Adapters](docs/storage-adapters.md)
 - `autoHideAnswers` option (attribute `auto-hide-answers`): hides each answer after a delay, so a finished question and its answer can both leave the screen
 - `hideAnimation` option (attribute `hide-animation`): `fade` (default), `pop` or `none`. Hidden bubbles now also collapse the space they took up instead of leaving a gap that snaps shut
 - `typingSpeed` option (attribute `typing-speed`): types each question onto the screen, in milliseconds per character. `0` shows it at once. Click the question to skip. Screen readers get the full text immediately, and reduced-motion users get no animation

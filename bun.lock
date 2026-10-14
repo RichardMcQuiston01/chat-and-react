@@ -39,6 +39,7 @@
       "version": "0.5.0",
       "dependencies": {
         "@richardmcquiston01/error-log-adapter": "^0.1.0",
+        "@richardmcquiston01/storage-adapters": "^0.1.0",
         "json-logic-js": "^2.0.2",
       },
       "devDependencies": {
@@ -220,6 +221,8 @@
     "@richardmcquiston01/chat-and-react-core": ["@richardmcquiston01/chat-and-react-core@workspace:packages/core"],
 
     "@richardmcquiston01/error-log-adapter": ["@richardmcquiston01/error-log-adapter@0.1.0", "", {}, "sha512-o7AOrHsVx8IBSJEnu/3CP++QSFIj0zUJl4RzrRXxLoXBmOXLaUnzpZXpJ7AVP/UzkK2RVjyPR0SOrptSiZIc0w=="],
+
+    "@richardmcquiston01/storage-adapters": ["@richardmcquiston01/storage-adapters@0.1.0", "", {}, "sha512-4D3//7VuD4k2WTXNgYnRz5c9MMN9WprqtQhgfDlIqc0CDslEGFCb/RsZaOKBuRLEuD6AbeoAS6eFlP9SrJ+fXw=="],
 
     "@rolldown/pluginutils": ["@rolldown/pluginutils@1.0.0-beta.27", "", {}, "sha512-+d0F4MKMCbeVUJwG96uQ4SgAznZNSq93I3V+9NHA4OpvqG8mRCpGdKmK8l/dl02h2CCDHwW2FqilnTyDcAnqjA=="],
 

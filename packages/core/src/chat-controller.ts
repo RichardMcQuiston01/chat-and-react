@@ -5,7 +5,7 @@ import { ConsoleErrorAdapter } from './adapters/console-error-adapter.js';
 import { IdentityInputAdapter } from './adapters/identity-input-adapter.js';
 import { RuleEngine } from './rule-engine.js';
 import { parseSchema } from './schema-parser.js';
-import { SessionManager } from './session-manager.js';
+import { SessionManager, type SessionStore } from './session-manager.js';
 import type {
   AnswerMap,
   ChatControllerConfig,
@@ -52,7 +52,7 @@ export class ChatController {
   private schema: ChatSchema | null = null;
   private options: ChatOptions = { ...DEFAULT_OPTIONS };
   private readonly config: Required<ChatControllerConfig>;
-  private readonly session: SessionManager;
+  private readonly session: SessionStore;
   private readonly ruleEngine = new RuleEngine();
   private currentPage: ChatPage | null = null;
   private allAnswers: AnswerMap = {};
@@ -69,7 +69,7 @@ export class ChatController {
    * @param config - Controller configuration including schema and optional adapters.
    * @param sessionManager - Optional session manager for test injection.
    */
-  constructor(config: ChatControllerConfig, sessionManager?: SessionManager) {
+  constructor(config: ChatControllerConfig, sessionManager?: SessionStore) {
     this.config = {
       inputAdapter: config.inputAdapter ?? new IdentityInputAdapter(),
       outputAdapter: config.outputAdapter ?? new BrowserEventAdapter(),
@@ -323,6 +323,7 @@ export class ChatController {
    * Tears down the controller: removes all listeners and nulls internal state.
    */
   destroy(): void {
+    this.session.dispose?.();
     this.listeners.clear();
     this.currentPage = null;
     this.schema = null;
