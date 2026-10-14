@@ -8,6 +8,10 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+---
+
+## [0.6.0] — 2026-10-14
+
 ### Changed
 
 - **Breaking:** `ErrorLogAdapter.log()` now returns `Promise<ErrorLogResult>` (`{ ok, error? }`) instead of `void`. The interface and the console, webhook and MongoDB adapters now come from the new [`@richardmcquiston01/error-log-adapter`](https://www.npmjs.com/package/@richardmcquiston01/error-log-adapter) package. Custom adapters need to return a result (adapters that return nothing still work at runtime). `ChatError` is now `ErrorLogEntry<ChatErrorCode>`
