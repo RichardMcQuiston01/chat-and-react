@@ -24,6 +24,12 @@ export async function startHarness(): Promise<Harness> {
     platform: 'browser',
     target: 'es2020',
     write: false,
+    // The web component imports core by package name; use core's source so no build is needed.
+    alias: {
+      '@richardmcquiston01/chat-and-react-core': fileURLToPath(
+        new URL('../../core/src/index.ts', import.meta.url),
+      ),
+    },
   });
   const script = bundle.outputFiles[0]?.text;
   if (script === undefined) {

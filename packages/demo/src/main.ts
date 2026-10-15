@@ -1,5 +1,6 @@
 import '@richardmcquiston01/chat-and-react';
 import { demoSchema } from './demo-schema.js';
+import { clearSavedProgress, DEMO_STORAGE_KEY, getProgressStorage } from './progress.js';
 import type { DemoSettings } from './settings.js';
 import {
   clearSettings,
@@ -37,6 +38,8 @@ function logEvent(label: string, detail: unknown): void {
 function createChatForm(): HTMLElement {
   const form = document.createElement('chat-form');
   form.id = 'chat';
+  // A stable name, so a visitor who reloads the page resumes where they left off.
+  form.setAttribute('storage-key', DEMO_STORAGE_KEY);
   form.setAttribute(
     'schema',
     JSON.stringify({ ...demoSchema, 'x-chat-options': { ...activeSettings } }),
@@ -75,6 +78,8 @@ function startForm(): void {
 function restartForm(): void {
   banner.hidden = true;
   clearEventLog();
+  // The new form has the same name as the old one, so it would resume it. Start from page 1.
+  clearSavedProgress(getProgressStorage());
   startForm();
 }
 

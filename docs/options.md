@@ -2,7 +2,7 @@
 
 [Back to README](../README.md)
 
-| [Editing answers](#editing-answers) | [Hiding finished questions and answers](#hiding-finished-questions-and-answers) | [Edit icon slot](#edit-icon-slot) | [Number keys](#number-keys) | [Keyboard](#keyboard) | [Typing effect](#typing-effect) | [Thinking bubble](#thinking-bubble) | [Continue button icon](#continue-button-icon) |
+| [Resuming a saved form](#resuming-a-saved-form) | [Editing answers](#editing-answers) | [Hiding finished questions and answers](#hiding-finished-questions-and-answers) | [Edit icon slot](#edit-icon-slot) | [Number keys](#number-keys) | [Keyboard](#keyboard) | [Typing effect](#typing-effect) | [Thinking bubble](#thinking-bubble) | [Continue button icon](#continue-button-icon) |
 
 You can set options in the schema under `x-chat-options`. You can also set them as attributes on the element. If you set both, the attribute wins.
 
@@ -27,6 +27,24 @@ Example with an attribute:
 ```
 
 Attributes are read once, when the element is added to the page. Boolean attributes accept `true` or `false` (writing the attribute with no value counts as `true`). Time attributes are numbers of milliseconds.
+
+## Resuming a saved form
+
+With `userResumable` on (the default), a visitor who comes back opens the form on the page they left. Progress is saved in `localStorage` under a name for that form. The name is the `storage-key` attribute when you set one, and otherwise a hash of the form's `schema`. So the same form finds its progress after a reload, and different forms on one page never read each other's.
+
+```html
+<chat-form schema='{ ... }'></chat-form>                        <!-- named from its schema -->
+<chat-form schema='{ ... }' storage-key="signup"></chat-form>   <!-- named "signup" -->
+```
+
+- **Changing the schema starts a new form.** A form with a different `schema` has a different name, so visitors begin it from the first page instead of resuming one that no longer matches. Set `storage-key` if you want edits to the schema to keep existing progress. A saved page that no longer exists in the schema also falls back to the first page.
+- **Two forms with the same schema share progress.** Give each its own `storage-key` if you put the same form on a page twice.
+- **Starting over:** progress is cleared when the form is complete. To clear it yourself, remove the `localStorage` keys that start with `car:form:<name>:`.
+- **With a [storage adapter](storage-adapters.md),** the adapter decides where progress goes, and `storage-key` is not used. If several forms use one adapter, wrap it with `withPrefix` from `@richardmcquiston01/storage-adapters` (a different prefix for each form), or they will share one session.
+
+Versions up to 0.7.0 gave every element a random name, so a returning visitor never found their progress. The `localStorage` keys those versions left behind can't be read again, and the form removes them the first time it loads.
+
+[Back to Top](#options)
 
 ## Editing answers
 

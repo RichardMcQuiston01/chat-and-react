@@ -8,6 +8,16 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- `<chat-form>` now resumes a visitor's saved progress after the page is reloaded. Each element used to save under a random name that changed on every page load, so a returning visitor always started on the first page. A form is now saved under its `storage-key` attribute, or under a hash of its schema when there is none. Different forms on one page stay apart; two forms with the same schema share progress unless they have different `storage-key`s. See [Options](docs/options.md#resuming-a-saved-form)
+- Demo: "Start over" and "Save and restart" clear the saved progress first, so they still begin on the first page now that a reload resumes. The demo form uses `storage-key="demo"`
+- The `localStorage` keys the old random names left behind (`car:inst:<uuid>:…`) can never be read again, so the form removes them the first time it loads instead of letting them pile up
+
+### Added
+
+- `storage-key` attribute: names the `localStorage` entry a form saves its progress in
+
 ---
 
 ## [0.7.0] — 2026-10-14
