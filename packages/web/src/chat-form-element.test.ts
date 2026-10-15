@@ -1415,6 +1415,53 @@ describe('<chat-form> with a storage adapter', () => {
   });
 });
 
+describe('<chat-form> with its own adapters', () => {
+  afterEach(() => {
+    document.body.innerHTML = '';
+    localStorage.clear();
+  });
+
+  const mount = (configure: (element: ChatFormElement) => void): ChatFormElement => {
+    const element = document.createElement('chat-form') as ChatFormElement;
+    element.setAttribute('schema', minimalSchema);
+    configure(element);
+    document.body.appendChild(element);
+    return element;
+  };
+
+  it('passes the parsed schema through the input adapter', () => {
+    const transform = vi.fn((raw: unknown): unknown => raw);
+    mount((element) => element.setInputAdapter({ transform }));
+    expect(transform).toHaveBeenCalledTimes(1);
+    expect(transform.mock.calls[0]?.[0]).toMatchObject({ 'x-chat-version': '1' });
+  });
+
+  it('sends events to the output adapter', () => {
+    const emit = vi.fn();
+    const element = mount((target) => target.setOutputAdapter({ emit }));
+    const shadow = getShadow(element);
+    (requireElement(shadow, 'input') as HTMLInputElement).value = 'Ada';
+    requireElement(shadow, '[part="submit-btn"]').dispatchEvent(new Event('click'));
+    const types: string[] = emit.mock.calls.map((call) => (call[0] as { type: string }).type);
+    expect(types).toContain('form:complete');
+  });
+
+  it('logs errors through the error adapter', async () => {
+    const log = vi.fn(async () => ({ ok: true as const }));
+    mount((element) => {
+      element.setErrorAdapter({ log });
+      element.setInputAdapter({
+        transform: () => {
+          throw new Error('bad input adapter');
+        },
+      });
+    });
+    await vi.waitFor(() => expect(log).toHaveBeenCalled());
+    const entry = log.mock.calls[0] as unknown as [{ code: string }];
+    expect(entry[0].code).toBe('ADAPTER_ERROR');
+  });
+});
+
 describe('<chat-form> resuming a saved session', () => {
   const elements: HTMLElement[] = [];
 

@@ -4,7 +4,10 @@ import type {
   ChatEvent,
   ChatOptions,
   ChatQuestion,
+  ErrorLogAdapter,
   HideAnimation,
+  InputAdapter,
+  OutputAdapter,
   SessionStore,
   StorageAdapter,
 } from '@richardmcquiston01/chat-and-react-core';
@@ -176,6 +179,31 @@ export class ChatFormElement extends HTMLElement {
    */
   setStorageAdapter(adapter: StorageAdapter | null): void {
     this.registry.setStorageAdapter(adapter);
+  }
+
+  /**
+   * Converts the `schema` attribute with `adapter` before the form is built. The attribute is
+   * parsed as JSON first, so the adapter receives the parsed value. Call it before the element is
+   * added to the page.
+   */
+  setInputAdapter(adapter: InputAdapter): void {
+    this.registry.setInputAdapter(adapter);
+  }
+
+  /**
+   * Sends page-submit and form-complete events to `adapter` (a webhook, a WebSocket, ...) instead
+   * of dispatching browser events only. Call it before the element is added to the page.
+   */
+  setOutputAdapter(adapter: OutputAdapter): void {
+    this.registry.setOutputAdapter(adapter);
+  }
+
+  /**
+   * Sends errors to `adapter` instead of the console. Call it before the element is added to the
+   * page.
+   */
+  setErrorAdapter(adapter: ErrorLogAdapter): void {
+    this.registry.setErrorAdapter(adapter);
   }
 
   connectedCallback(): void {
