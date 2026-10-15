@@ -8,6 +8,10 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+---
+
+## [0.8.0] — 2026-10-15
+
 ### Fixed
 
 - `<chat-form>` now resumes a visitor's saved progress after the page is reloaded. Each element used to save under a random name that changed on every page load, so a returning visitor always started on the first page. A form is now saved under its `storage-key` attribute, or under a hash of its schema when there is none. Different forms on one page stay apart; two forms with the same schema share progress unless they have different `storage-key`s. See [Options](docs/options.md#resuming-a-saved-form)
