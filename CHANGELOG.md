@@ -17,6 +17,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 
 - `storage-key` attribute: names the `localStorage` entry a form saves its progress in
+- `<chat-form>` now has `setInputAdapter()`, `setOutputAdapter()` and `setErrorAdapter()` next to `setStorageAdapter()`, so the web component can use custom input, output and error-log adapters. Until now only the headless `ChatController` could. See [Custom Adapters](docs/custom-adapters.md#using-your-adapters)
 
 ---
 

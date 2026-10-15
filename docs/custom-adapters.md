@@ -68,7 +68,23 @@ const myAdapter: ErrorLogAdapter = {
 
 ## Using your adapters
 
-If you use `@richardmcquiston01/chat-and-react-core` on its own, pass your adapters to `ChatController`. See [Headless Usage](headless-usage.md).
+**In the web component,** call the setters on the `<chat-form>` element before you add it to the page:
+
+```ts
+import { ConsoleErrorAdapter } from "@richardmcquiston01/chat-and-react-core";
+
+const form = document.createElement("chat-form");
+form.setAttribute("schema", JSON.stringify(schema));
+form.setInputAdapter(myInputAdapter);       // gets the parsed `schema` attribute
+form.setOutputAdapter(myOutputAdapter);     // page and form events; the browser events still fire
+form.setErrorAdapter(new ConsoleErrorAdapter());
+form.setStorageAdapter(myStorageAdapter);   // see Storage Adapters
+document.body.appendChild(form);
+```
+
+The element reads its adapters once, when it is added to the page. Anything you leave unset keeps its default.
+
+**On its own,** if you use `@richardmcquiston01/chat-and-react-core` without the web component, pass your adapters to `ChatController`. See [Headless Usage](headless-usage.md).
 
 Don't want to write your own? Try the [Optional Adapters](optional-adapters.md).
 
