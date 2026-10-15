@@ -19,15 +19,52 @@ import { Renderer } from './renderer.js';
 import { getStyles } from './styles.js';
 
 /**
- * A localStorage-backed storage that prefixes every key with a per-element
- * instance UUID, ensuring different `<chat-form>` elements cannot share or
- * clobber each other's session state.
+ * A stable 53-bit hash of a string (cyrb53), as lowercase hex. It gives a form a name that is the
+ * same on every page load, so a returning visitor finds the progress they saved.
  */
-class InstanceStorage {
+function hashString(text: string): string {
+  let h1 = 0xdeadbeef;
+  let h2 = 0x41c6ce57;
+  for (let index = 0; index < text.length; index++) {
+    const code = text.charCodeAt(index);
+    h1 = Math.imul(h1 ^ code, 2654435761);
+    h2 = Math.imul(h2 ^ code, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16);
+}
+
+/**
+ * Keys written by versions up to 0.7.0 started with `car:inst:` and a random UUID that changed on
+ * every page load, so they could never be read again.
+ */
+const ORPHANED_KEY = /^car:inst:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:/;
+
+/** Removes the unreadable keys left by earlier versions. Finds nothing after the first run. */
+function removeOrphanedKeys(): void {
+  try {
+    const orphaned: string[] = [];
+    for (let index = 0; index < localStorage.length; index++) {
+      const key = localStorage.key(index);
+      if (key !== null && ORPHANED_KEY.test(key)) orphaned.push(key);
+    }
+    for (const key of orphaned) localStorage.removeItem(key);
+  } catch {
+    // Storage is unavailable; there is nothing to clean up.
+  }
+}
+
+/**
+ * A localStorage-backed storage that prefixes every key with the form's storage key. The same form
+ * gets the same prefix on every page load, so its saved progress can be found again, and forms with
+ * different keys cannot read or clobber each other's session state.
+ */
+class FormStorage {
   private readonly prefix: string;
 
-  constructor() {
-    this.prefix = `car:inst:${crypto.randomUUID()}:`;
+  constructor(storageKey: string) {
+    this.prefix = `car:form:${storageKey}:`;
   }
 
   getItem(key: string): string | null {
@@ -105,7 +142,7 @@ interface SuspendedPage {
 export class ChatFormElement extends HTMLElement {
   private controller: ChatController | null = null;
   private session: SessionStore | null = null;
-  private storage: InstanceStorage | null = null;
+  private storage: FormStorage | null = null;
   private renderer: Renderer | null = null;
   private readonly registry = new AdapterRegistry();
 
@@ -189,8 +226,20 @@ export class ChatFormElement extends HTMLElement {
       return;
     }
 
-    this.storage = new InstanceStorage();
+    removeOrphanedKeys();
+    this.storage = new FormStorage(this.storageKey(schemaAttr));
     this.startController(schema, new SessionManager(this.storage));
+  }
+
+  /**
+   * The name this form saves its progress under. It is the `storage-key` attribute when there is
+   * one, and otherwise a hash of the schema, so the same form is found again on the next page load
+   * and different forms on one page stay apart. Two forms with identical schemas share progress
+   * unless they are given different `storage-key`s.
+   */
+  private storageKey(schemaText: string): string {
+    const explicitKey = this.getAttribute('storage-key')?.trim();
+    return explicitKey ? explicitKey : hashString(schemaText);
   }
 
   /**

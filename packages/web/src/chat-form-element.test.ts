@@ -40,6 +40,12 @@ const twoPageSchema = JSON.stringify({
   ],
 });
 
+// Each test starts like a first-time visitor. A form now finds the progress it saved earlier, so
+// progress left by one test would otherwise be resumed by the next.
+afterEach(() => {
+  localStorage.clear();
+});
+
 function mount(schema: string): HTMLElement {
   const el = document.createElement('chat-form');
   el.setAttribute('schema', schema);
@@ -1406,5 +1412,99 @@ describe('<chat-form> with a storage adapter', () => {
     const second = mountWithAdapter(twoPageSchema);
     await vi.waitFor(() => expect(second.shadowRoot?.textContent).toContain('Tell us more'));
     expect(second.shadowRoot?.textContent).not.toContain('Pick?');
+  });
+});
+
+describe('<chat-form> resuming a saved session', () => {
+  const elements: HTMLElement[] = [];
+
+  afterEach(() => {
+    for (const element of elements.splice(0)) element.remove();
+  });
+
+  /** Adds a form to the page, the way a page does on load. */
+  function add(schema: string, attributes: Record<string, string> = {}): HTMLElement {
+    const form = document.createElement('chat-form');
+    form.setAttribute('schema', schema);
+    for (const [name, value] of Object.entries(attributes)) form.setAttribute(name, value);
+    document.body.appendChild(form);
+    elements.push(form);
+    return form;
+  }
+
+  /** Answers "A" on page 1 of twoPageSchema and presses Continue. */
+  function answerFirstPage(form: HTMLElement): void {
+    const shadow = getShadow(form);
+    const radio = requireElement<HTMLInputElement>(shadow, 'input[value="A"]');
+    radio.checked = true;
+    requireElement(shadow, '[part="submit-btn"]').dispatchEvent(new Event('click'));
+  }
+
+  function questionsShown(form: HTMLElement): string[] {
+    return Array.from(getShadow(form).querySelectorAll('.car-page .car-bubble')).map(
+      (bubble) => bubble.textContent ?? '',
+    );
+  }
+
+  it('opens on the saved page when the same form is added again', () => {
+    const first = add(twoPageSchema);
+    answerFirstPage(first);
+    expect(questionsShown(first)).toContain('Tell us more');
+    first.remove();
+
+    const returning = add(twoPageSchema);
+    expect(questionsShown(returning)).toContain('Tell us more');
+    expect(questionsShown(returning)).not.toContain('Pick?');
+  });
+
+  it('starts a different form from its first page', () => {
+    answerFirstPage(add(twoPageSchema));
+    const other = add(minimalSchema);
+    expect(questionsShown(other)).toContain('What is your name?');
+  });
+
+  it('keeps two forms on one page apart when they have different storage keys', () => {
+    const left = add(twoPageSchema, { 'storage-key': 'left' });
+    const right = add(twoPageSchema, { 'storage-key': 'right' });
+    answerFirstPage(left);
+    left.remove();
+    right.remove();
+
+    expect(questionsShown(add(twoPageSchema, { 'storage-key': 'left' }))).toContain('Tell us more');
+    expect(questionsShown(add(twoPageSchema, { 'storage-key': 'right' }))).toContain('Pick?');
+  });
+
+  it('shares progress between forms that have the same storage key, even with other schemas', () => {
+    answerFirstPage(add(twoPageSchema, { 'storage-key': 'signup' }));
+    const sameKey = add(twoPageSchema, { 'storage-key': ' signup ' });
+    expect(questionsShown(sameKey)).toContain('Tell us more');
+  });
+
+  it('saves under car:form:<key>: and leaves no random per-element keys behind', () => {
+    answerFirstPage(add(twoPageSchema, { 'storage-key': 'signup' }));
+    const keys = Array.from({ length: localStorage.length }, (_, index) => localStorage.key(index));
+    expect(keys.length).toBeGreaterThan(0);
+    for (const savedKey of keys) {
+      expect(savedKey).toMatch(/^car:form:signup:/);
+    }
+  });
+
+  it('removes the unreadable keys left by earlier versions and nothing else', () => {
+    const orphan = 'car:inst:3f2b8c1e-9a4d-4e6f-8b7a-1c2d3e4f5a6b:car:session-id';
+    const orphanProgress = 'car:inst:3f2b8c1e-9a4d-4e6f-8b7a-1c2d3e4f5a6b:car:progress:x';
+    const keep = [
+      'my-app:theme',
+      'car:inst:not-a-uuid:car:session-id',
+      'car:form:other:car:session-id',
+    ];
+    localStorage.setItem(orphan, 'a');
+    localStorage.setItem(orphanProgress, 'b');
+    for (const key of keep) localStorage.setItem(key, 'kept');
+
+    add(twoPageSchema);
+
+    expect(localStorage.getItem(orphan)).toBeNull();
+    expect(localStorage.getItem(orphanProgress)).toBeNull();
+    for (const key of keep) expect(localStorage.getItem(key)).toBe('kept');
   });
 });
