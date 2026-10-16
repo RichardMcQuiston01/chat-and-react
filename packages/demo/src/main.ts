@@ -1,6 +1,6 @@
-import '@richardmcquiston01/chat-and-react';
+import '@richardmcquiston01/chat-and-react'; // registers <chat-form>
+import type { ChatFormElement } from '@richardmcquiston01/chat-and-react';
 import { demoSchema } from './demo-schema.js';
-import { clearSavedProgress, DEMO_STORAGE_KEY, getProgressStorage } from './progress.js';
 import type { DemoSettings } from './settings.js';
 import {
   clearSettings,
@@ -39,7 +39,7 @@ function createChatForm(): HTMLElement {
   const form = document.createElement('chat-form');
   form.id = 'chat';
   // A stable name, so a visitor who reloads the page resumes where they left off.
-  form.setAttribute('storage-key', DEMO_STORAGE_KEY);
+  form.setAttribute('storage-key', 'demo');
   form.setAttribute(
     'schema',
     JSON.stringify({ ...demoSchema, 'x-chat-options': { ...activeSettings } }),
@@ -79,7 +79,10 @@ function restartForm(): void {
   banner.hidden = true;
   clearEventLog();
   // The new form has the same name as the old one, so it would resume it. Start from page 1.
-  clearSavedProgress(getProgressStorage());
+  const existingForm = document.getElementById('chat') as ChatFormElement | null;
+  if (existingForm && !existingForm.clearProgress()) {
+    console.warn('[demo] Could not clear the saved progress; the new form may resume it');
+  }
   startForm();
 }
 

@@ -163,4 +163,51 @@ describe('<chat-form> resuming after the page is reloaded', () => {
     expect(keys).toContain('my-app:theme');
     expect(keys.some((key) => key?.startsWith('car:inst:'))).toBe(false);
   });
+
+  it('brings back text that was typed but never submitted', async () => {
+    const { page } = await openPage();
+    await mountForm(page, twoPageSchema);
+    await page.waitForFunction(() => document.querySelector('chat-form')?.shadowRoot?.textContent);
+    await answerFirstPage(page);
+    await page.waitForFunction(() =>
+      document.querySelector('chat-form')?.shadowRoot?.textContent?.includes('Tell us more'),
+    );
+    await page.locator('chat-form input[type="text"]').fill('half a sentence, no Continue');
+
+    await page.reload();
+    await mountForm(page, twoPageSchema);
+    await page.waitForFunction(() =>
+      document.querySelector('chat-form')?.shadowRoot?.textContent?.includes('Tell us more'),
+    );
+
+    const restored = await page.evaluate(
+      () => document.querySelector('chat-form')?.shadowRoot?.querySelector('input')?.value,
+    );
+    expect(restored).toBe('half a sentence, no Continue');
+  });
+
+  it('starts over after clearProgress() is called', async () => {
+    const { page } = await openPage();
+    await mountForm(page, twoPageSchema);
+    await page.waitForFunction(() => document.querySelector('chat-form')?.shadowRoot?.textContent);
+    await answerFirstPage(page);
+    await page.waitForFunction(() =>
+      document.querySelector('chat-form')?.shadowRoot?.textContent?.includes('Tell us more'),
+    );
+    await page.locator('chat-form input[type="text"]').fill('typed');
+
+    const cleared = await page.evaluate(() =>
+      (
+        document.querySelector('chat-form') as unknown as { clearProgress(): boolean }
+      ).clearProgress(),
+    );
+    expect(cleared).toBe(true);
+
+    await page.reload();
+    await mountForm(page, twoPageSchema);
+    await page.waitForFunction(() => document.querySelector('chat-form')?.shadowRoot?.textContent);
+    const text = await shownText(page);
+    expect(text).toContain('Pick?');
+    expect(text).not.toContain('Tell us more');
+  });
 });

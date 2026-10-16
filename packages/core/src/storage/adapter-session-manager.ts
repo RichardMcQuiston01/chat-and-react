@@ -158,6 +158,13 @@ export class AdapterSessionManager implements SessionStore {
     return this.record.inputs[questionId] ?? null;
   }
 
+  clearInput(questionId: string): void {
+    if (!(questionId in this.record.inputs)) return;
+    delete this.record.inputs[questionId];
+    this.dirtyInputs.add(questionId);
+    this.schedulePersist();
+  }
+
   clearAll(): void {
     this.record = emptyRecord();
     this.dirtyInputs.clear();
@@ -271,7 +278,12 @@ export class AdapterSessionManager implements SessionStore {
       const inputs: Record<string, InputValue> = { ...remote.inputs };
       for (const questionId of this.dirtyInputs) {
         const mine: InputValue | undefined = this.record.inputs[questionId];
-        if (mine !== undefined) inputs[questionId] = mine;
+        // An input that is dirty but missing here was cleared on this tab.
+        if (mine !== undefined) {
+          inputs[questionId] = mine;
+        } else {
+          delete inputs[questionId];
+        }
       }
       this.record = {
         progress: this.dirtyProgress ? this.record.progress : remote.progress,

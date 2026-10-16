@@ -206,6 +206,33 @@ export class ChatFormElement extends HTMLElement {
     this.registry.setErrorAdapter(adapter);
   }
 
+  /**
+   * Deletes this form's saved progress and drafts from storage, so the next page load starts on
+   * the first page. What is on screen is not reset; to start over right away, remove the element
+   * and add it again.
+   *
+   * Returns `true` when the saved data was removed. Returns `false` when there was nothing to
+   * clear it from: the element has no `schema` yet, or it uses a storage adapter that is still
+   * loading. Once an adapter-backed form has loaded, this clears it too.
+   */
+  clearProgress(): boolean {
+    if (this.session) {
+      this.session.clearAll();
+      return true;
+    }
+    if (this.registry.getStorageAdapter()) return false;
+    const schemaAttr = this.getAttribute('schema');
+    if (!schemaAttr) return false;
+    const storage = new FormStorage(this.storageKey(schemaAttr));
+    const keys: string[] = [];
+    for (let index = 0; index < storage.length; index++) {
+      const key = storage.key(index);
+      if (key !== null) keys.push(key);
+    }
+    for (const key of keys) storage.removeItem(key);
+    return true;
+  }
+
   connectedCallback(): void {
     const shadow = this.attachShadow({ mode: 'open' });
 
@@ -449,7 +476,7 @@ export class ChatFormElement extends HTMLElement {
     const stepQuestions = this.getStepQuestions();
     this.renderer.renderPage(page, stepQuestions, {
       showTitle: this.questionIndex === 0,
-      values: this.pageAnswers,
+      values: this.withDrafts(stepQuestions),
       showContinueIcon: this.showContinueIcon,
       // Revisited questions (edits) appear straight away; only new ones are
       // "thought about" and "typed".
@@ -503,27 +530,20 @@ export class ChatFormElement extends HTMLElement {
       });
     }
 
-    // Wire up per-keystroke localStorage saves when the option is enabled.
+    // Save what is typed or picked, so a reload brings it back before it is submitted. Answers
+    // given while editing an earlier page are not drafts, so they are left out.
     if (this.controller?.getOptions().localStorage && this.session) {
-      const session = this.session;
-      const sessionId = session.getSessionId();
-      const storage = this.storage;
-      inputArea
-        .querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(
-          'input:not([type="radio"]):not([type="checkbox"]), textarea',
-        )
-        .forEach((el) => {
-          const questionId = (el as HTMLElement).dataset['questionId'] ?? '';
-          el.addEventListener('input', () => {
-            const value = (el as HTMLInputElement).value;
-            if (storage) {
-              storage.setItem(`car:input:${sessionId}:${questionId}`, value);
-            } else {
-              // A storage adapter is in use: save through the session.
-              session.saveInput(questionId, value);
-            }
-          });
-        });
+      const saveDraft = (): void => {
+        if (!this.session || this.editingRouteIndex !== null) return;
+        const stepQuestions = this.getStepQuestions();
+        const drafts: AnswerMap = this.collectAnswers(stepQuestions, inputArea);
+        for (const question of stepQuestions) {
+          const draft = drafts[question.id];
+          if (draft !== undefined) this.session.saveInput(question.id, draft);
+        }
+      };
+      inputArea.addEventListener('input', saveDraft);
+      inputArea.addEventListener('change', saveDraft);
     }
 
     // Keep the new question on screen while it is thought about and typed.
@@ -630,7 +650,9 @@ export class ChatFormElement extends HTMLElement {
       return;
     }
 
+    const submittedQuestions: ChatQuestion[] = this.pageQuestions;
     this.controller.submitPage(this.pageAnswers);
+    this.clearDrafts(submittedQuestions);
 
     // Advance to the next page if the form is not complete.
     if (this.controller.getCurrentPage()) {
@@ -728,6 +750,29 @@ export class ChatFormElement extends HTMLElement {
     if (this.controller.getCurrentPage()) {
       this.renderCurrentPage(true);
     }
+  }
+
+  /**
+   * The answers already given on this page, plus the saved draft of each of `questions` that has
+   * none yet. A draft is what was typed or picked before a reload and never submitted.
+   */
+  private withDrafts(questions: ChatQuestion[]): AnswerMap {
+    const values: AnswerMap = { ...this.pageAnswers };
+    if (!this.session || !this.controller?.getOptions().localStorage) return values;
+    if (this.editingRouteIndex !== null) return values;
+
+    for (const question of questions) {
+      if (values[question.id] !== undefined) continue;
+      const draft = this.session.loadInput(question.id);
+      const expectsList = question['x-chat-input'] === 'checkbox';
+      if (draft !== null && Array.isArray(draft) === expectsList) values[question.id] = draft;
+    }
+    return values;
+  }
+
+  /** Forgets the drafts of a page that has just been submitted. */
+  private clearDrafts(questions: ChatQuestion[]): void {
+    for (const question of questions) this.session?.clearInput(question.id);
   }
 
   /** Reads current values from all input widgets in the given input area. */

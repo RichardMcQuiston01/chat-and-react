@@ -1462,6 +1462,292 @@ describe('<chat-form> with its own adapters', () => {
   });
 });
 
+describe('<chat-form> restoring answers that were typed but not submitted', () => {
+  const elements: HTMLElement[] = [];
+
+  afterEach(() => {
+    for (const element of elements.splice(0)) element.remove();
+  });
+
+  const singleQuestionSchema = (question: Record<string, unknown>): string =>
+    JSON.stringify({
+      'x-chat-version': '1',
+      'x-chat-pages': [
+        {
+          id: 'p1',
+          title: 'P1',
+          questions: [{ id: 'q1', type: 'string', title: 'Question?', ...question }],
+          branching: [{ type: 'always', destination_id: '**FORM_COMPLETED**' }],
+        },
+      ],
+    });
+
+  function add(schema: string, attributes: Record<string, string> = {}): HTMLElement {
+    const form = document.createElement('chat-form');
+    form.setAttribute('schema', schema);
+    for (const [name, value] of Object.entries(attributes)) form.setAttribute(name, value);
+    document.body.appendChild(form);
+    elements.push(form);
+    return form;
+  }
+
+  function type(form: HTMLElement, selector: string, value: string): void {
+    const field = requireElement<HTMLInputElement | HTMLTextAreaElement>(getShadow(form), selector);
+    field.value = value;
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  it('brings back typed text after the form is added again', () => {
+    const schema = singleQuestionSchema({ 'x-chat-input': 'text' });
+    const first = add(schema);
+    type(first, 'input', 'half a sent');
+    first.remove();
+
+    const returning = add(schema);
+    expect(requireElement<HTMLInputElement>(getShadow(returning), 'input').value).toBe(
+      'half a sent',
+    );
+  });
+
+  it('brings back text typed in a multi-line box', () => {
+    const schema = singleQuestionSchema({ 'x-chat-input': 'textarea' });
+    const first = add(schema);
+    type(first, 'textarea', 'line one\nline two');
+    first.remove();
+
+    const returning = add(schema);
+    expect(requireElement<HTMLTextAreaElement>(getShadow(returning), 'textarea').value).toBe(
+      'line one\nline two',
+    );
+  });
+
+  it('brings back a picked radio choice', () => {
+    const schema = singleQuestionSchema({ 'x-chat-input': 'radio', enum: ['A', 'B'] });
+    const first = add(schema);
+    const radio = requireElement<HTMLInputElement>(getShadow(first), 'input[value="B"]');
+    radio.checked = true;
+    radio.dispatchEvent(new Event('change', { bubbles: true }));
+    first.remove();
+
+    const returning = add(schema);
+    expect(requireElement<HTMLInputElement>(getShadow(returning), 'input[value="B"]').checked).toBe(
+      true,
+    );
+    expect(requireElement<HTMLInputElement>(getShadow(returning), 'input[value="A"]').checked).toBe(
+      false,
+    );
+  });
+
+  it('brings back ticked checkboxes', () => {
+    const schema = singleQuestionSchema({
+      type: 'array',
+      'x-chat-input': 'checkbox',
+      items: { enum: ['Tech', 'Art', 'Sport'] },
+    });
+    const first = add(schema);
+    for (const choice of ['Tech', 'Sport']) {
+      const box = requireElement<HTMLInputElement>(getShadow(first), `input[value="${choice}"]`);
+      box.checked = true;
+      box.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    first.remove();
+
+    const returning = add(schema);
+    const ticked = Array.from(
+      getShadow(returning).querySelectorAll<HTMLInputElement>('input[type="checkbox"]:checked'),
+    ).map((box) => box.value);
+    expect(ticked).toEqual(['Tech', 'Sport']);
+  });
+
+  it('brings back a dropdown choice', () => {
+    const schema = singleQuestionSchema({ 'x-chat-input': 'dropdown', enum: ['UK', 'US'] });
+    const first = add(schema);
+    const select = requireElement<HTMLSelectElement>(getShadow(first), 'select');
+    select.value = 'US';
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    first.remove();
+
+    const returning = add(schema);
+    expect(requireElement<HTMLSelectElement>(getShadow(returning), 'select').value).toBe('US');
+  });
+
+  it('forgets the draft once the page is submitted', () => {
+    const first = add(twoPageSchema);
+    const radio = requireElement<HTMLInputElement>(getShadow(first), 'input[value="A"]');
+    radio.checked = true;
+    radio.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(localStorage.length).toBeGreaterThan(0);
+    const inputKeys = (): string[] =>
+      Array.from(
+        { length: localStorage.length },
+        (_, index) => localStorage.key(index) ?? '',
+      ).filter((key) => key.includes('car:input:'));
+    expect(inputKeys()).toHaveLength(1);
+
+    requireElement(getShadow(first), '[part="submit-btn"]').dispatchEvent(new Event('click'));
+    expect(inputKeys()).toHaveLength(0);
+  });
+
+  it('does not restore text on the next page that was typed on the previous one', () => {
+    const first = add(twoPageSchema);
+    const radio = requireElement<HTMLInputElement>(getShadow(first), 'input[value="A"]');
+    radio.checked = true;
+    radio.dispatchEvent(new Event('change', { bubbles: true }));
+    requireElement(getShadow(first), '[part="submit-btn"]').dispatchEvent(new Event('click'));
+    first.remove();
+
+    const returning = add(twoPageSchema);
+    expect(requireElement<HTMLInputElement>(getShadow(returning), 'input').value).toBe('');
+  });
+
+  it('saves and restores nothing when local-storage is false', () => {
+    const schema = singleQuestionSchema({ 'x-chat-input': 'text' });
+    const first = add(schema, { 'local-storage': 'false' });
+    type(first, 'input', 'private');
+    first.remove();
+
+    const returning = add(schema, { 'local-storage': 'false' });
+    expect(requireElement<HTMLInputElement>(getShadow(returning), 'input').value).toBe('');
+    expect(
+      Array.from({ length: localStorage.length }, (_, index) => localStorage.key(index) ?? '').some(
+        (key) => key.includes('car:input:'),
+      ),
+    ).toBe(false);
+  });
+
+  it('restores a draft saved through a storage adapter', async () => {
+    const schema = singleQuestionSchema({ 'x-chat-input': 'text' });
+    const adapter = localStorageAdapter();
+    const mountWith = (): ChatFormElement => {
+      const form = document.createElement('chat-form') as ChatFormElement;
+      form.setAttribute('schema', schema);
+      form.setStorageAdapter(adapter);
+      document.body.appendChild(form);
+      elements.push(form);
+      return form;
+    };
+
+    const first = mountWith();
+    await vi.waitFor(() => expect(getShadow(first).querySelector('input')).not.toBeNull());
+    type(first, 'input', 'from an adapter');
+    // Saves to an adapter run in the background.
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    first.remove();
+
+    const returning = mountWith();
+    await vi.waitFor(() => expect(getShadow(returning).querySelector('input')).not.toBeNull());
+    expect(requireElement<HTMLInputElement>(getShadow(returning), 'input').value).toBe(
+      'from an adapter',
+    );
+  });
+});
+
+describe('<chat-form> clearProgress()', () => {
+  const elements: HTMLElement[] = [];
+
+  afterEach(() => {
+    for (const element of elements.splice(0)) element.remove();
+  });
+
+  function add(attributes: Record<string, string> = {}): ChatFormElement {
+    const form = document.createElement('chat-form') as ChatFormElement;
+    form.setAttribute('schema', twoPageSchema);
+    for (const [name, value] of Object.entries(attributes)) form.setAttribute(name, value);
+    document.body.appendChild(form);
+    elements.push(form);
+    return form;
+  }
+
+  function answerFirstPage(form: HTMLElement): void {
+    const radio = requireElement<HTMLInputElement>(getShadow(form), 'input[value="A"]');
+    radio.checked = true;
+    requireElement(getShadow(form), '[part="submit-btn"]').dispatchEvent(new Event('click'));
+  }
+
+  const shows = (form: HTMLElement, text: string): boolean =>
+    (getShadow(form).textContent ?? '').includes(text);
+
+  it('makes the next page load start on the first page', () => {
+    const first = add();
+    answerFirstPage(first);
+    expect(first.clearProgress()).toBe(true);
+    first.remove();
+
+    expect(shows(add(), 'Pick?')).toBe(true);
+  });
+
+  it('also removes a draft that was typed but not submitted', () => {
+    const first = add();
+    const radio = requireElement<HTMLInputElement>(getShadow(first), 'input[value="B"]');
+    radio.checked = true;
+    radio.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(first.clearProgress()).toBe(true);
+    first.remove();
+
+    expect(requireElement<HTMLInputElement>(getShadow(add()), 'input[value="B"]').checked).toBe(
+      false,
+    );
+  });
+
+  it('leaves other forms alone', () => {
+    const kept = add({ 'storage-key': 'kept' });
+    answerFirstPage(kept);
+    kept.remove();
+    const cleared = add({ 'storage-key': 'cleared' });
+    answerFirstPage(cleared);
+
+    expect(cleared.clearProgress()).toBe(true);
+    expect(shows(add({ 'storage-key': 'kept' }), 'Tell us more')).toBe(true);
+  });
+
+  it('clears the saved data of a form that is not on the page yet', () => {
+    const first = add({ 'storage-key': 'later' });
+    answerFirstPage(first);
+    first.remove();
+
+    const waiting = document.createElement('chat-form') as ChatFormElement;
+    waiting.setAttribute('schema', twoPageSchema);
+    waiting.setAttribute('storage-key', 'later');
+    expect(waiting.clearProgress()).toBe(true);
+
+    expect(shows(add({ 'storage-key': 'later' }), 'Pick?')).toBe(true);
+  });
+
+  it('returns false when there is no schema to name the saved data by', () => {
+    const empty = document.createElement('chat-form') as ChatFormElement;
+    expect(empty.clearProgress()).toBe(false);
+  });
+
+  it('returns false for an adapter form that has not finished loading', () => {
+    const loading = document.createElement('chat-form') as ChatFormElement;
+    loading.setAttribute('schema', twoPageSchema);
+    loading.setStorageAdapter(localStorageAdapter());
+    expect(loading.clearProgress()).toBe(false);
+  });
+
+  it('clears an adapter form once it has loaded', async () => {
+    const adapter = localStorageAdapter();
+    const mountWith = (): ChatFormElement => {
+      const form = document.createElement('chat-form') as ChatFormElement;
+      form.setAttribute('schema', twoPageSchema);
+      form.setStorageAdapter(adapter);
+      document.body.appendChild(form);
+      elements.push(form);
+      return form;
+    };
+
+    const first = mountWith();
+    await vi.waitFor(() => expect(getShadow(first).querySelector('input')).not.toBeNull());
+    answerFirstPage(first);
+    expect(first.clearProgress()).toBe(true);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    first.remove();
+
+    const returning = mountWith();
+    await vi.waitFor(() => expect(getShadow(returning).textContent).toContain('Pick?'));
+  });
+});
+
 describe('<chat-form> resuming a saved session', () => {
   const elements: HTMLElement[] = [];
 

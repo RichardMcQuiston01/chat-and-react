@@ -90,6 +90,40 @@ describe('AdapterSessionManager', () => {
     expect(reloaded.loadInput('q2')).toBe('b');
   });
 
+  it('clearInput forgets one input and saves that', async () => {
+    const adapter = memoryAdapter();
+    const manager = await AdapterSessionManager.create(adapter);
+    manager.saveInput('q1', 'a');
+    manager.saveInput('q2', 'b');
+    manager.clearInput('q1');
+    await manager.flush();
+
+    const reloaded = await AdapterSessionManager.create(adapter);
+    expect(reloaded.loadInput('q1')).toBeNull();
+    expect(reloaded.loadInput('q2')).toBe('b');
+  });
+
+  it('keeps an input cleared on this tab cleared when another tab writes', async () => {
+    const adapter = memoryAdapter();
+    const tabA = await AdapterSessionManager.create(adapter);
+    tabA.saveInput('q1', 'draft');
+    await tabA.flush();
+    const failOn: Partial<Record<'get' | 'set' | 'remove', string>> = {};
+    const tabB = await AdapterSessionManager.create(failing(adapter, failOn), {
+      onError: () => {},
+    });
+
+    // The clear cannot be saved yet, so it is still waiting when the other tab's change arrives.
+    failOn.set = 'unavailable';
+    tabB.clearInput('q1');
+    await tabB.flush();
+    tabA.saveInput('other', 'x');
+    await tabA.flush();
+
+    expect(tabB.loadInput('q1')).toBeNull();
+    expect(tabB.loadInput('other')).toBe('x');
+  });
+
   it('merges inputs from two tabs without losing either', async () => {
     const adapter = memoryAdapter();
     const tabA = await AdapterSessionManager.create(adapter);

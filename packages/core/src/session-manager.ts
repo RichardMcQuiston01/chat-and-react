@@ -29,6 +29,8 @@ export interface SessionStore {
   loadProgress(): SessionProgress | null;
   saveInput(questionId: string, value: string | string[]): void;
   loadInput(questionId: string): string | string[] | null;
+  /** Forgets a saved input, such as a draft that has been submitted. */
+  clearInput(questionId: string): void;
   clearAll(): void;
   /** Stops listening for changes made elsewhere. Called when the controller is destroyed. */
   dispose?(): void;
@@ -81,6 +83,11 @@ export class SessionManager implements SessionStore {
     } catch {
       return null;
     }
+  }
+
+  clearInput(questionId: string): void {
+    if (!this.available) return;
+    this.storage.removeItem(keyInput(this.sessionId, questionId));
   }
 
   clearAll(): void {
