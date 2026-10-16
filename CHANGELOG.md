@@ -8,6 +8,21 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `<chat-form>` has a `clearProgress()` method that deletes the form's saved page, answers and unsubmitted answers, so the next page load starts on the first page. It returns `true` when the data was removed and `false` when there was nothing to clear it from. It works with the built-in storage (even before the element is added to the page) and with a storage adapter once it has loaded. See [Options](docs/options.md#resuming-a-saved-form)
+- `SessionStore` has a `clearInput()` method, implemented by `SessionManager` and `AdapterSessionManager`, to forget one saved input
+
+### Fixed
+
+- Answers that were typed or picked but not submitted now come back after a reload. They were written as the visitor typed, but never read again. Every kind of input is saved (not just text boxes), the answer is filled in when the question is asked again, and it is forgotten once the page is submitted. It is not saved while an earlier answer is being edited, and `localStorage: false` turns it off
+- Those unsubmitted answers were saved as plain text, which the session could not read back. They are now saved the same way as every other input. Ones saved by earlier versions are ignored
+
+### Changed
+
+- A custom `SessionStore` (the interface `ChatController` takes) needs the new `clearInput()` method. `SessionManager` and `AdapterSessionManager` already have it
+- Demo: "Start over" and "Save and restart" use `clearProgress()` instead of removing `localStorage` keys by hand
+
 ---
 
 ## [0.8.0] — 2026-10-15

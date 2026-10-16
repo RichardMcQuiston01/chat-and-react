@@ -100,6 +100,14 @@ describe('SessionManager', () => {
     expect(manager.loadInput('colors')).toEqual(['red', 'blue']);
   });
 
+  it('clears one saved input and leaves the others', () => {
+    manager.saveInput('q1', 'a');
+    manager.saveInput('q2', 'b');
+    manager.clearInput('q1');
+    expect(manager.loadInput('q1')).toBeNull();
+    expect(manager.loadInput('q2')).toBe('b');
+  });
+
   it('clears progress and input keys but not session id', () => {
     const sessionId = manager.getSessionId();
     manager.saveProgress('p1', { q1: 'a' });

@@ -9,7 +9,7 @@ You can set options in the schema under `x-chat-options`. You can also set them 
 | Option              | Attribute             | Default | What it does                                                                                    |
 | ------------------- | --------------------- | ------- | ----------------------------------------------------------------------------------------------- |
 | `userResumable`     | `user-resumable`      | `true`  | Saves progress so users can come back. When `false`, `page:submit` events are not sent          |
-| `localStorage`      | `local-storage`       | `true`  | Saves each answer to `localStorage` while the user types                                        |
+| `localStorage`      | `local-storage`       | `true`  | Saves each answer while the user types or picks, so it comes back after a reload                |
 | `autoComplete`      | `auto-complete`       | `true`  | When `false`, every input gets `autocomplete="off"`                                             |
 | `allowEdit`         | `allow-edit`          | `false` | Shows an Edit icon on each answer so users can change it                                        |
 | `autoHideQuestions` | `auto-hide-questions` | `0`     | Hides each answered question after this many milliseconds. `0` keeps them                       |
@@ -39,7 +39,15 @@ With `userResumable` on (the default), a visitor who comes back opens the form o
 
 - **Changing the schema starts a new form.** A form with a different `schema` has a different name, so visitors begin it from the first page instead of resuming one that no longer matches. Set `storage-key` if you want edits to the schema to keep existing progress. A saved page that no longer exists in the schema also falls back to the first page.
 - **Two forms with the same schema share progress.** Give each its own `storage-key` if you put the same form on a page twice.
-- **Starting over:** progress is cleared when the form is complete. To clear it yourself, remove the `localStorage` keys that start with `car:form:<name>:`.
+- **Answers you have not submitted come back too.** With `localStorage` on (the default), what a visitor has typed or picked on the question in front of them is saved as they go, for every kind of input. After a reload the question opens with that answer filled in. It is forgotten once the page is submitted, and it is not saved while an earlier answer is being edited. Set `localStorage` to `false` to turn it off.
+- **Starting over:** progress is cleared when the form is complete. To clear it yourself, call `clearProgress()` on the element:
+
+  ```ts
+  const form = document.querySelector("chat-form") as ChatFormElement;
+  const cleared: boolean = form.clearProgress();
+  ```
+
+  It deletes the saved page, answers and unsubmitted answers, so the next page load starts on the first page. What is on screen is not reset; to start over right away, remove the element and add it again. It returns `true` when the saved data was removed, and `false` when there was nothing to clear it from (the element has no `schema` yet, or it uses a storage adapter that has not finished loading). It also works before the element is added to the page, as long as its `schema` (and `storage-key`) are set.
 - **With a [storage adapter](storage-adapters.md),** the adapter decides where progress goes, and `storage-key` is not used. If several forms use one adapter, wrap it with `withPrefix` from `@richardmcquiston01/storage-adapters` (a different prefix for each form), or they will share one session.
 
 Versions up to 0.7.0 gave every element a random name, so a returning visitor never found their progress. The `localStorage` keys those versions left behind can't be read again, and the form removes them the first time it loads.
