@@ -8,6 +8,10 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+---
+
+## [0.10.0] — 2026-10-17
+
 ### Added
 
 - `<chat-form>` fires a `chat-external-change` event when another tab changes the form's saved progress, with `detail.progress` set to the new progress (`null` if it was finished or cleared there). It works with the built-in storage (through the browser's `storage` event) and with a storage adapter that reports changes. The form on screen is not moved. See [Events](docs/events.md#chat-external-change)
