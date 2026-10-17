@@ -8,6 +8,10 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+---
+
+## [0.9.0] — 2026-10-17
+
 ### Added
 
 - `<chat-form>` has a `clearProgress()` method that deletes the form's saved page, answers and unsubmitted answers, so the next page load starts on the first page. It returns `true` when the data was removed and `false` when there was nothing to clear it from. It works with the built-in storage (even before the element is added to the page) and with a storage adapter once it has loaded. See [Options](docs/options.md#resuming-a-saved-form)
