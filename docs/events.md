@@ -2,9 +2,9 @@
 
 [Back to README](../README.md)
 
-| [`chat-page-submit`](#chat-page-submit) | [`chat-form-complete`](#chat-form-complete) | [Listening for events](#listening-for-events) |
+| [`chat-page-submit`](#chat-page-submit) | [`chat-form-complete`](#chat-form-complete) | [`chat-external-change`](#chat-external-change) | [Listening for events](#listening-for-events) |
 
-The form sends two events. Both are browser `CustomEvent`s that bubble up the page. The data is in `event.detail`.
+The form sends the first two events as the visitor works through it. A third tells you when another tab changed the saved progress. All are browser `CustomEvent`s that bubble up the page. The data is in `event.detail`.
 
 ## `chat-page-submit`
 
@@ -34,6 +34,37 @@ Fires when there are no more pages left.
   allAnswers: Record<string, string | string[]>;
 }
 ```
+
+[Back to Top](#events)
+
+## `chat-external-change`
+
+Fires when another tab (or another window) changes this form's saved progress. It is only a notice: the form on screen does not move. It does not fire for changes made in this tab.
+
+```ts
+{
+  progress: {
+    currentPageId: string; // the page the other tab is on
+    answers: Record<string, string | string[]>;
+  } | null; // null when the other tab finished or cleared the form
+}
+```
+
+It works with the built-in storage (using the browser's `storage` event) and with a [storage adapter](storage-adapters.md#several-tabs) that reports changes, such as `localStorageAdapter()`.
+
+To make this tab follow the other one, call `resync()` on the element. It reloads what is saved, drops the chat on screen, and restarts on the saved page. It resolves to `true` once the form has restarted, and to `false` when there is nothing to restart (the element is not on the page or has no valid `schema`). If the form was finished or cleared elsewhere, it starts again from the first page.
+
+```js
+el.addEventListener("chat-external-change", async (e) => {
+  if (e.detail.progress === null) return; // finished or cleared elsewhere: leave this tab alone
+  if (confirm("This form was updated in another tab. Switch to it?")) {
+    const restarted = await el.resync();
+    if (!restarted) console.warn("The form could not be restarted");
+  }
+});
+```
+
+Two tabs on the same form can each submit their own pages, so the page that was submitted last is the one that is saved. If a form sends answers to your server, use this event to stop a second tab from sending them again.
 
 [Back to Top](#events)
 

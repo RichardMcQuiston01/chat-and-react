@@ -390,6 +390,14 @@ export class Renderer {
     this.animationTimers.clear();
   }
 
+  /** Empties the chat: every bubble, the active input area and any animation in progress. */
+  reset(): void {
+    this.clearAnimationTimers();
+    this.inputArea = null;
+    this.messageList.replaceChildren();
+    this.pruneEditIconCopies();
+  }
+
   /** Stops any thinking / typing in progress, for example when the form is removed. */
   cancelAnimations(): void {
     this.clearAnimationTimers();

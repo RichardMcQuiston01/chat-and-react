@@ -1,4 +1,5 @@
 import { localStorageAdapter } from '@richardmcquiston01/chat-and-react-core';
+import { memoryAdapter } from '@richardmcquiston01/storage-adapters';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import './index.js'; // registers <chat-form>
 import type { ChatFormElement } from './chat-form-element.js';
@@ -1745,6 +1746,201 @@ describe('<chat-form> clearProgress()', () => {
 
     const returning = mountWith();
     await vi.waitFor(() => expect(getShadow(returning).textContent).toContain('Pick?'));
+  });
+});
+
+describe('<chat-form> changes made in another tab', () => {
+  const elements: HTMLElement[] = [];
+
+  afterEach(() => {
+    for (const element of elements.splice(0)) element.remove();
+  });
+
+  function add(attributes: Record<string, string> = {}): ChatFormElement {
+    const form = document.createElement('chat-form') as ChatFormElement;
+    form.setAttribute('schema', twoPageSchema);
+    for (const [name, value] of Object.entries(attributes)) form.setAttribute(name, value);
+    document.body.appendChild(form);
+    elements.push(form);
+    return form;
+  }
+
+  function addWithAdapter(adapter: ReturnType<typeof memoryAdapter>): ChatFormElement {
+    const form = document.createElement('chat-form') as ChatFormElement;
+    form.setAttribute('schema', twoPageSchema);
+    form.setStorageAdapter(adapter);
+    document.body.appendChild(form);
+    elements.push(form);
+    return form;
+  }
+
+  function answerFirstPage(form: HTMLElement): void {
+    const radio = requireElement<HTMLInputElement>(getShadow(form), 'input[value="A"]');
+    radio.checked = true;
+    requireElement(getShadow(form), '[part="submit-btn"]').dispatchEvent(new Event('click'));
+  }
+
+  const shows = (form: HTMLElement, text: string): boolean =>
+    (getShadow(form).textContent ?? '').includes(text);
+
+  const externalChanges = (form: HTMLElement): { progress: { currentPageId: string } | null }[] => {
+    const received: { progress: { currentPageId: string } | null }[] = [];
+    form.addEventListener('chat-external-change', (event) =>
+      received.push((event as CustomEvent).detail),
+    );
+    return received;
+  };
+
+  /** What another tab writes to localStorage when it moves this form to page 2. */
+  function writeProgressFromAnotherTab(storageKey: string): string {
+    const prefix = `car:form:${storageKey}:`;
+    const sessionId = localStorage.getItem(`${prefix}car:session-id`) ?? '';
+    const key = `${prefix}car:progress:${sessionId}`;
+    localStorage.setItem(key, JSON.stringify({ currentPageId: 'p2', answers: { q1: 'A' } }));
+    return key;
+  }
+
+  it('tells the page when another tab changes the saved progress (built-in storage)', () => {
+    const form = add({ 'storage-key': 'tabs' });
+    const received = externalChanges(form);
+
+    const key = writeProgressFromAnotherTab('tabs');
+    window.dispatchEvent(new StorageEvent('storage', { key, storageArea: localStorage }));
+
+    expect(received).toHaveLength(1);
+    expect(received[0]?.progress?.currentPageId).toBe('p2');
+    expect(shows(form, 'Pick?')).toBe(true);
+  });
+
+  it('reports null when another tab cleared the saved progress', () => {
+    const form = add({ 'storage-key': 'tabs' });
+    answerFirstPage(form);
+    const received = externalChanges(form);
+
+    const prefix = 'car:form:tabs:';
+    const sessionId = localStorage.getItem(`${prefix}car:session-id`) ?? '';
+    const key = `${prefix}car:progress:${sessionId}`;
+    localStorage.removeItem(key);
+    window.dispatchEvent(new StorageEvent('storage', { key, storageArea: localStorage }));
+
+    expect(received).toEqual([{ progress: null }]);
+  });
+
+  it('ignores changes that are not to this form session', () => {
+    const form = add({ 'storage-key': 'tabs' });
+    const received = externalChanges(form);
+
+    for (const key of [
+      'car:form:other:car:progress:x',
+      'car:form:tabs:car:input:session:q1',
+      'my-app:theme',
+    ]) {
+      window.dispatchEvent(new StorageEvent('storage', { key, storageArea: localStorage }));
+    }
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: 'car:form:tabs:car:progress:x',
+        storageArea: sessionStorage,
+      }),
+    );
+
+    expect(received).toEqual([]);
+  });
+
+  it('stops listening when the element is removed', () => {
+    const form = add({ 'storage-key': 'tabs' });
+    const received = externalChanges(form);
+    const key = writeProgressFromAnotherTab('tabs');
+    form.remove();
+
+    window.dispatchEvent(new StorageEvent('storage', { key, storageArea: localStorage }));
+    expect(received).toEqual([]);
+  });
+
+  it('tells the page when another tab changes the saved progress (storage adapter)', async () => {
+    const adapter = memoryAdapter();
+    const thisTab = addWithAdapter(adapter);
+    await vi.waitFor(() => expect(getShadow(thisTab).querySelector('input')).not.toBeNull());
+    const received = externalChanges(thisTab);
+
+    const otherTab = addWithAdapter(adapter);
+    await vi.waitFor(() => expect(getShadow(otherTab).querySelector('input')).not.toBeNull());
+    answerFirstPage(otherTab);
+
+    await vi.waitFor(() => expect(received.length).toBeGreaterThan(0));
+    expect(received.at(-1)?.progress?.currentPageId).toBe('p2');
+    expect(shows(thisTab, 'Pick?')).toBe(true);
+  });
+
+  describe('resync()', () => {
+    it('restarts on the saved page and drops the old chat history (built-in storage)', async () => {
+      const form = add({ 'storage-key': 'tabs' });
+      expect(shows(form, 'Pick?')).toBe(true);
+
+      writeProgressFromAnotherTab('tabs');
+      await expect(form.resync()).resolves.toBe(true);
+
+      expect(shows(form, 'Tell us more')).toBe(true);
+      expect(shows(form, 'Pick?')).toBe(false);
+    });
+
+    it('restarts on the saved page (storage adapter)', async () => {
+      const adapter = memoryAdapter();
+      const thisTab = addWithAdapter(adapter);
+      await vi.waitFor(() => expect(getShadow(thisTab).querySelector('input')).not.toBeNull());
+      const otherTab = addWithAdapter(adapter);
+      await vi.waitFor(() => expect(getShadow(otherTab).querySelector('input')).not.toBeNull());
+      answerFirstPage(otherTab);
+      await vi.waitFor(() => expect(shows(otherTab, 'Tell us more')).toBe(true));
+
+      await expect(thisTab.resync()).resolves.toBe(true);
+
+      expect(shows(thisTab, 'Tell us more')).toBe(true);
+      expect(shows(thisTab, 'Pick?')).toBe(false);
+    });
+
+    it('keeps the form working: it can be finished after a resync', async () => {
+      const form = add({ 'storage-key': 'tabs' });
+      const completed: CustomEvent[] = [];
+      form.addEventListener('chat-form-complete', (event) => completed.push(event as CustomEvent));
+
+      writeProgressFromAnotherTab('tabs');
+      await form.resync();
+      (requireElement(getShadow(form), 'input') as HTMLInputElement).value = 'done';
+      requireElement(getShadow(form), '[part="submit-btn"]').dispatchEvent(new Event('click'));
+
+      expect(completed).toHaveLength(1);
+    });
+
+    it('starts from the first page when the saved progress was cleared elsewhere', async () => {
+      const form = add({ 'storage-key': 'tabs' });
+      answerFirstPage(form);
+      expect(shows(form, 'Tell us more')).toBe(true);
+
+      expect(form.clearProgress()).toBe(true);
+      await expect(form.resync()).resolves.toBe(true);
+
+      expect(shows(form, 'Pick?')).toBe(true);
+    });
+
+    it('resolves to false when there is nothing to restart', async () => {
+      const notOnPage = document.createElement('chat-form') as ChatFormElement;
+      notOnPage.setAttribute('schema', twoPageSchema);
+      await expect(notOnPage.resync()).resolves.toBe(false);
+
+      const noSchema = document.createElement('chat-form') as ChatFormElement;
+      document.body.appendChild(noSchema);
+      elements.push(noSchema);
+      await expect(noSchema.resync()).resolves.toBe(false);
+    });
+
+    it('lets calls made while it runs share one result', async () => {
+      const form = add({ 'storage-key': 'tabs' });
+      const first = form.resync();
+      const second = form.resync();
+      expect(second).toBe(first);
+      await first;
+    });
   });
 });
 
