@@ -49,6 +49,7 @@
     "@richardmcquiston01/chat-and-react-core": "workspace:*"
   },
   "devDependencies": {
+    "@richardmcquiston01/storage-adapters": "^0.5.0",
     "happy-dom": "^14.0.0",
     "tsup": "^8.5.1",
     "vitest": "^1.6.0"

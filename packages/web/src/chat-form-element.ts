@@ -8,6 +8,7 @@ import type {
   HideAnimation,
   InputAdapter,
   OutputAdapter,
+  SessionProgress,
   SessionStore,
   StorageAdapter,
 } from '@richardmcquiston01/chat-and-react-core';
@@ -68,6 +69,14 @@ class FormStorage {
 
   constructor(storageKey: string) {
     this.prefix = `car:form:${storageKey}:`;
+  }
+
+  /**
+   * True for a full `localStorage` key that holds this form's session (its id or progress), as
+   * opposed to another form's key or one of this form's unsubmitted answers.
+   */
+  isSessionKey(fullKey: string): boolean {
+    return fullKey.startsWith(this.prefix) && !fullKey.startsWith(`${this.prefix}car:input:`);
   }
 
   getItem(key: string): string | null {
@@ -148,6 +157,9 @@ export class ChatFormElement extends HTMLElement {
   private storage: FormStorage | null = null;
   private renderer: Renderer | null = null;
   private readonly registry = new AdapterRegistry();
+  /** The parsed `schema` attribute, kept so the form can be restarted by `resync()`. */
+  private schema: unknown = null;
+  private resyncing: Promise<boolean> | null = null;
 
   /** Visible questions of the current page, asked one at a time. */
   private pageQuestions: ChatQuestion[] = [];
@@ -233,6 +245,91 @@ export class ChatFormElement extends HTMLElement {
     return true;
   }
 
+  /**
+   * Reloads the form from what is saved and restarts it on the saved page, dropping the chat
+   * history on screen. Use it after a `chat-external-change` event when the host wants this tab to
+   * follow the change. If the form was finished or cleared in another tab, it starts again from the
+   * first page.
+   *
+   * Resolves to `true` once the form has restarted. Resolves to `false` when there is nothing to
+   * restart: the element is not on the page, has no valid `schema`, or was removed meanwhile.
+   * Calls made while a resync is already running share its result.
+   */
+  resync(): Promise<boolean> {
+    if (this.resyncing) return this.resyncing;
+    if (!this.controller || !this.renderer || this.schema === null) return Promise.resolve(false);
+    const resyncing: Promise<boolean> = this.performResync(this.schema).finally(() => {
+      this.resyncing = null;
+    });
+    this.resyncing = resyncing;
+    return resyncing;
+  }
+
+  private async performResync(schema: unknown): Promise<boolean> {
+    // Let this tab's own unsaved changes reach storage first, so they are loaded back, not lost.
+    if (this.session instanceof AdapterSessionManager) await this.session.flush();
+    if (!this.controller || !this.renderer) return false;
+
+    const adapter: StorageAdapter | null = this.registry.getStorageAdapter();
+    let next: SessionStore;
+    if (adapter) {
+      next = await this.createAdapterSession(adapter);
+      if (!this.controller || !this.renderer) {
+        // The element was removed while the saved session was loading.
+        next.dispose?.();
+        return false;
+      }
+    } else if (this.storage) {
+      next = new SessionManager(this.storage);
+    } else {
+      return false;
+    }
+
+    this.resetFormState();
+    this.startController(schema, next);
+    return true;
+  }
+
+  /** Clears the chat, the timers and the page state so a new controller starts clean. */
+  private resetFormState(): void {
+    this.hideTimers.forEach((timerId) => {
+      window.clearTimeout(timerId);
+    });
+    this.hideTimers.clear();
+    this.renderer?.reset();
+    this.controller?.destroy();
+    this.controller = null;
+    this.pageQuestions = [];
+    this.questionIndex = 0;
+    this.pageAnswers = {};
+    this.pageTitleLogged = false;
+    this.pendingRouteIndex = 0;
+    this.editingRouteIndex = null;
+    this.suspendedPage = null;
+  }
+
+  /** Tells the page that another tab changed this form's saved progress. */
+  private dispatchExternalChange(progress: SessionProgress | null): void {
+    this.dispatchEvent(
+      new CustomEvent('chat-external-change', { detail: { progress }, bubbles: true }),
+    );
+  }
+
+  /**
+   * With the built-in storage, the browser sends a `storage` event when another tab changes
+   * `localStorage`. Only changes to this form's own session are passed on.
+   */
+  private readonly handleStorageEvent = (event: StorageEvent): void => {
+    if (!this.storage || !this.session) return;
+    try {
+      if (event.storageArea !== null && event.storageArea !== localStorage) return;
+    } catch {
+      return;
+    }
+    if (event.key !== null && !this.storage.isSessionKey(event.key)) return;
+    this.dispatchExternalChange(this.session.loadProgress());
+  };
+
   connectedCallback(): void {
     const shadow = this.attachShadow({ mode: 'open' });
 
@@ -250,11 +347,13 @@ export class ChatFormElement extends HTMLElement {
     });
     this.hideTimers.clear();
     this.renderer?.cancelAnimations();
+    window.removeEventListener('storage', this.handleStorageEvent);
     this.controller?.destroy();
     this.controller = null;
     this.session = null;
     this.storage = null;
     this.renderer = null;
+    this.schema = null;
   }
 
   /** Parses the schema attribute and wires up the ChatController. */
@@ -275,6 +374,7 @@ export class ChatFormElement extends HTMLElement {
       return;
     }
 
+    this.schema = schema;
     const storageAdapter: StorageAdapter | null = this.registry.getStorageAdapter();
     if (storageAdapter) {
       void this.initWithStorageAdapter(schema, storageAdapter);
@@ -283,6 +383,7 @@ export class ChatFormElement extends HTMLElement {
 
     removeOrphanedKeys();
     this.storage = new FormStorage(this.storageKey(schemaAttr));
+    window.addEventListener('storage', this.handleStorageEvent);
     this.startController(schema, new SessionManager(this.storage));
   }
 
@@ -302,15 +403,21 @@ export class ChatFormElement extends HTMLElement {
    * is shown until the saved session has been read, so a resumed form opens on the right page.
    */
   private async initWithStorageAdapter(schema: unknown, adapter: StorageAdapter): Promise<void> {
-    const session: AdapterSessionManager = await AdapterSessionManager.create(adapter, {
-      onError: (error: ChatError) => this.logError(error),
-    });
+    const session: AdapterSessionManager = await this.createAdapterSession(adapter);
     if (!this.renderer) {
       // The element was removed while the saved session was loading.
       session.dispose();
       return;
     }
     this.startController(schema, session);
+  }
+
+  /** Loads the saved session from `adapter`, reporting failures and changes from other tabs. */
+  private createAdapterSession(adapter: StorageAdapter): Promise<AdapterSessionManager> {
+    return AdapterSessionManager.create(adapter, {
+      onError: (error: ChatError) => this.logError(error),
+      onExternalChange: (progress: SessionProgress | null) => this.dispatchExternalChange(progress),
+    });
   }
 
   /** Sends an error to the registered error adapter; a failure there goes to the console. */

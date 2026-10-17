@@ -78,7 +78,7 @@ If the adapter can't be reached, the form still works. Progress is kept in memor
 `localStorageAdapter()` (from [`@richardmcquiston01/storage-adapters/browser`](https://www.npmjs.com/package/@richardmcquiston01/storage-adapters), re-exported by the core package) gives each saved value a revision and reports changes made in other tabs.
 
 - **Conflicts:** if two tabs save at once, they are merged. Answers are merged per question. A tab that only typed never overwrites another tab's progress. After three conflicts in a row, the save is abandoned and reported.
-- **Changes from another tab:** the session's copy is updated, and `onExternalChange` is called with the new progress (`null` if the form was finished there). The form on screen is not moved.
+- **Changes from another tab:** the session's copy is updated, and the element fires a [`chat-external-change`](events.md#chat-external-change) event with the new progress (`null` if the form was finished there). The form on screen is not moved; call `resync()` on the element to follow the other tab. With `AdapterSessionManager` on its own, the same notice is the `onExternalChange` option.
 
 [Back to Top](#storage-adapters)
 
