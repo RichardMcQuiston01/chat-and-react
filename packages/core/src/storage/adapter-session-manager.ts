@@ -18,6 +18,8 @@ type InputValue = string | string[];
 interface SessionRecord {
   progress: SessionProgress | null;
   inputs: Record<string, InputValue>;
+  /** When the form was finished (milliseconds since the epoch), if it has been. */
+  completedAt?: number;
 }
 
 export interface AdapterSessionManagerOptions {
@@ -38,6 +40,7 @@ function parseRecord(raw: string): SessionRecord | null {
     return {
       progress: parsed.progress ?? null,
       inputs: parsed.inputs && typeof parsed.inputs === 'object' ? parsed.inputs : {},
+      ...(typeof parsed.completedAt === 'number' ? { completedAt: parsed.completedAt } : {}),
     };
   } catch {
     return null;
@@ -58,6 +61,8 @@ export class AdapterSessionManager implements SessionStore {
   private revision: string | undefined;
   private readonly dirtyInputs = new Set<string>();
   private dirtyProgress = false;
+  /** True from `complete()` until it is saved: the whole session was reset, so nothing remote is kept. */
+  private resetPending = false;
   private pending = false;
   private persisting: Promise<void> | null = null;
   private readonly signal: AbortSignal = new AbortController().signal;
@@ -165,10 +170,23 @@ export class AdapterSessionManager implements SessionStore {
     this.schedulePersist();
   }
 
+  complete(): void {
+    this.record = { progress: null, inputs: {}, completedAt: Date.now() };
+    this.dirtyInputs.clear();
+    this.dirtyProgress = true;
+    this.resetPending = true;
+    this.schedulePersist();
+  }
+
+  completedAt(): number | null {
+    return this.record.completedAt ?? null;
+  }
+
   clearAll(): void {
     this.record = emptyRecord();
     this.dirtyInputs.clear();
     this.dirtyProgress = false;
+    this.resetPending = false;
     this.pending = false;
     if (!this.available) return;
     void this.removeRecord();
@@ -223,8 +241,10 @@ export class AdapterSessionManager implements SessionStore {
   private async persistOnce(): Promise<'saved' | 'conflict' | 'failed'> {
     const sentInputs = new Set<string>(this.dirtyInputs);
     const sentProgress: boolean = this.dirtyProgress;
+    const sentReset: boolean = this.resetPending;
     this.dirtyInputs.clear();
     this.dirtyProgress = false;
+    this.resetPending = false;
 
     const result: StoreResult<StoredValue> = await this.adapter.set(
       keyRecord(this.sessionId),
@@ -239,6 +259,7 @@ export class AdapterSessionManager implements SessionStore {
     // Keep what was not saved so the next attempt includes it.
     for (const questionId of sentInputs) this.dirtyInputs.add(questionId);
     this.dirtyProgress = this.dirtyProgress || sentProgress;
+    this.resetPending = this.resetPending || sentReset;
 
     if (result.code !== 'conflict') {
       this.report(`Could not save session ${this.sessionId}: ${result.error}`);
@@ -275,7 +296,8 @@ export class AdapterSessionManager implements SessionStore {
         this.revision = stored.revision;
         return;
       }
-      const inputs: Record<string, InputValue> = { ...remote.inputs };
+      // A finished form leaves nothing of another tab's behind; otherwise the two are merged.
+      const inputs: Record<string, InputValue> = this.resetPending ? {} : { ...remote.inputs };
       for (const questionId of this.dirtyInputs) {
         const mine: InputValue | undefined = this.record.inputs[questionId];
         // An input that is dirty but missing here was cleared on this tab.
@@ -285,9 +307,12 @@ export class AdapterSessionManager implements SessionStore {
           delete inputs[questionId];
         }
       }
+      const completedAt: number | undefined =
+        Math.max(this.record.completedAt ?? 0, remote.completedAt ?? 0) || undefined;
       this.record = {
         progress: this.dirtyProgress ? this.record.progress : remote.progress,
         inputs,
+        ...(completedAt !== undefined ? { completedAt } : {}),
       };
       this.revision = stored.revision;
     }

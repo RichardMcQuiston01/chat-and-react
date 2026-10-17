@@ -131,6 +131,34 @@ describe('ChatController', () => {
     expect((event as { answers: Record<string, string> }).answers).toEqual({ q1: 'hello' });
   });
 
+  it('records the completion in the session when the form is finished', () => {
+    const session = new SessionManager(makeStorage());
+    const controller = new ChatController({ schema: singlePageSchema }, session);
+    controller.start();
+    controller.submitPage({ q1: 'a' });
+    expect(session.loadProgress()).toBeNull();
+    expect(session.completedAt()).not.toBeNull();
+  });
+
+  it('clears a session store that cannot record completion', () => {
+    const base = new SessionManager(makeStorage());
+    const clearAll = vi.fn(() => base.clearAll());
+    const store = {
+      isStorageAvailable: base.isStorageAvailable,
+      getSessionId: () => base.getSessionId(),
+      saveProgress: base.saveProgress.bind(base),
+      loadProgress: base.loadProgress.bind(base),
+      saveInput: base.saveInput.bind(base),
+      loadInput: base.loadInput.bind(base),
+      clearInput: base.clearInput.bind(base),
+      clearAll,
+    };
+    const controller = new ChatController({ schema: singlePageSchema }, store);
+    controller.start();
+    controller.submitPage({ q1: 'a' });
+    expect(clearAll).toHaveBeenCalledTimes(1);
+  });
+
   it('fires form:complete when FORM_COMPLETED reached', () => {
     const c = makeController();
     c.start();

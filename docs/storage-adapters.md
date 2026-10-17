@@ -79,6 +79,7 @@ If the adapter can't be reached, the form still works. Progress is kept in memor
 
 - **Conflicts:** if two tabs save at once, they are merged. Answers are merged per question. A tab that only typed never overwrites another tab's progress. After three conflicts in a row, the save is abandoned and reported.
 - **Changes from another tab:** the session's copy is updated, and the element fires a [`chat-external-change`](events.md#chat-external-change) event with the new progress (`null` if the form was finished there). The form on screen is not moved; call `resync()` on the element to follow the other tab. With `AdapterSessionManager` on its own, the same notice is the `onExternalChange` option.
+- **Finishing the form:** `complete()` clears the saved progress and answers and records when the form was finished (`completedAt()`), so a tab that is still open can tell "finished" from "cleared". The record stays in storage with that time and nothing else; `clearAll()` removes it.
 
 [Back to Top](#storage-adapters)
 

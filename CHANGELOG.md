@@ -8,6 +8,16 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `chat-stale-submit` event. A tab that is behind another tab no longer overwrites the newer saved progress when its visitor submits a page. Nothing is saved or sent: the tab fires `chat-stale-submit` (with `detail.progress` and `detail.completed`) and follows the newer tab, as `resync()` does. See [Events](docs/events.md#chat-stale-submit)
+- When another tab finished the form, a tab that is still open and submits shows the finished form instead of sending `chat-page-submit` and `chat-form-complete` again. A finished form is remembered for 24 hours; a cleared one is not taken for a finished one
+- `SessionStore` has optional `complete()` and `completedAt()` methods, implemented by `SessionManager` and `AdapterSessionManager`. `ChatController` calls `complete()` when the form is finished and falls back to `clearAll()` for a store without it
+
+### Changed
+
+- With a storage adapter, finishing the form now leaves a small record with the time it was finished (and no answers) instead of removing the record. `clearAll()` and `clearProgress()` remove it
+
 ---
 
 ## [0.10.0] — 2026-10-17

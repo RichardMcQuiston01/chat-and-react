@@ -17,6 +17,7 @@ export interface SessionProgress {
 const KEY_SESSION = 'car:session-id';
 const keyProgress = (id: string) => `car:progress:${id}`;
 const keyInput = (sessionId: string, questionId: string) => `car:input:${sessionId}:${questionId}`;
+const keyCompleted = (sessionId: string) => `car:completed:${sessionId}`;
 
 /**
  * What `ChatController` needs from session storage. `SessionManager` keeps it in a
@@ -32,6 +33,14 @@ export interface SessionStore {
   /** Forgets a saved input, such as a draft that has been submitted. */
   clearInput(questionId: string): void;
   clearAll(): void;
+  /**
+   * Called when the form is finished. Clears the saved session like `clearAll()` and also records
+   * that it was completed, so another tab that is still open can tell "finished" from "cleared".
+   * A store without it is cleared with `clearAll()`.
+   */
+  complete?(): void;
+  /** When `complete()` was last called, in any tab (milliseconds since the epoch), or null. */
+  completedAt?(): number | null;
   /** Stops listening for changes made elsewhere. Called when the controller is destroyed. */
   dispose?(): void;
 }
@@ -90,11 +99,23 @@ export class SessionManager implements SessionStore {
     this.storage.removeItem(keyInput(this.sessionId, questionId));
   }
 
+  complete(): void {
+    this.clearAll();
+    if (!this.available) return;
+    this.storage.setItem(keyCompleted(this.sessionId), String(Date.now()));
+  }
+
+  completedAt(): number | null {
+    if (!this.available) return null;
+    const completedAt = Number(this.storage.getItem(keyCompleted(this.sessionId)));
+    return Number.isFinite(completedAt) && completedAt > 0 ? completedAt : null;
+  }
+
   clearAll(): void {
     if (!this.available) return;
     const progressKey = keyProgress(this.sessionId);
     const inputPrefix = `car:input:${this.sessionId}:`;
-    const keysToRemove: string[] = [progressKey];
+    const keysToRemove: string[] = [progressKey, keyCompleted(this.sessionId)];
 
     for (let i = 0; i < this.storage.length; i++) {
       const k = this.storage.key(i);

@@ -1,5 +1,5 @@
 // packages/core/src/session-manager.test.ts
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { StorageBackend } from './session-manager.js';
 import { SessionManager } from './session-manager.js';
 
@@ -106,6 +106,45 @@ describe('SessionManager', () => {
     manager.clearInput('q1');
     expect(manager.loadInput('q1')).toBeNull();
     expect(manager.loadInput('q2')).toBe('b');
+  });
+
+  describe('complete()', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('clears the session and records when it was completed', () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(1_700_000_000_000);
+      manager.saveProgress('p1', { q1: 'a' });
+      manager.saveInput('q1', 'a');
+      expect(manager.completedAt()).toBeNull();
+
+      manager.complete();
+
+      expect(manager.loadProgress()).toBeNull();
+      expect(manager.loadInput('q1')).toBeNull();
+      expect(manager.completedAt()).toBe(1_700_000_000_000);
+    });
+
+    it('is seen by another manager on the same storage', () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(1_700_000_000_000);
+      manager.complete();
+      expect(new SessionManager(storage).completedAt()).toBe(1_700_000_000_000);
+    });
+
+    it('is forgotten by clearAll(), so a cleared form is not taken for a finished one', () => {
+      manager.complete();
+      manager.clearAll();
+      expect(manager.completedAt()).toBeNull();
+    });
+
+    it('does nothing when storage is unavailable', () => {
+      const blocked = new SessionManager(makeThrowingStorage());
+      expect(() => blocked.complete()).not.toThrow();
+      expect(blocked.completedAt()).toBeNull();
+    });
   });
 
   it('clears progress and input keys but not session id', () => {

@@ -2,9 +2,9 @@
 
 [Back to README](../README.md)
 
-| [`chat-page-submit`](#chat-page-submit) | [`chat-form-complete`](#chat-form-complete) | [`chat-external-change`](#chat-external-change) | [Listening for events](#listening-for-events) |
+| [`chat-page-submit`](#chat-page-submit) | [`chat-form-complete`](#chat-form-complete) | [`chat-external-change`](#chat-external-change) | [`chat-stale-submit`](#chat-stale-submit) | [Listening for events](#listening-for-events) |
 
-The form sends the first two events as the visitor works through it. A third tells you when another tab changed the saved progress. All are browser `CustomEvent`s that bubble up the page. The data is in `event.detail`.
+The form sends the first two events as the visitor works through it. The other two tell you when another tab changed the saved progress. All are browser `CustomEvent`s that bubble up the page. The data is in `event.detail`.
 
 ## `chat-page-submit`
 
@@ -64,7 +64,28 @@ el.addEventListener("chat-external-change", async (e) => {
 });
 ```
 
-Two tabs on the same form can each submit their own pages, so the page that was submitted last is the one that is saved. If a form sends answers to your server, use this event to stop a second tab from sending them again.
+[Back to Top](#events)
+
+## `chat-stale-submit`
+
+Fires when a visitor submits a page in a tab that is behind: another tab has changed the saved progress since this tab last read or wrote it. Nothing is saved or sent. `chat-page-submit` and `chat-form-complete` do not fire for that submit, so a second tab cannot send answers again or wipe the newer progress.
+
+```ts
+{
+  progress: {
+    currentPageId: string; // the page the other tab is on
+    answers: Record<string, string | string[]>;
+  } | null;
+  completed: boolean; // true when the other tab finished the form
+}
+```
+
+What the tab does next depends on `completed`:
+
+- **`false`:** the tab follows the newer one. It does what `resync()` does and restarts on the saved page. If the saved progress was cleared, `progress` is `null` and the form starts again from the first page. The answers the visitor typed on the page they were behind on are not saved.
+- **`true`:** the other tab finished the form (within the last 24 hours). This tab shows the form as finished: the input and the Edit icons go away, and the chat history stays.
+
+Use the event to tell the visitor, for example "This form was already completed in another tab". The library shows no message of its own. Tabs are only compared when `userResumable` is `true`. Two forms with the same schema on one page share progress, so they can be "behind" each other in the same way.
 
 [Back to Top](#events)
 
