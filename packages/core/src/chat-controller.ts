@@ -279,7 +279,11 @@ export class ChatController {
     }
 
     if (nextPageId === '**FORM_COMPLETED**') {
-      this.session.clearAll();
+      if (this.session.complete) {
+        this.session.complete();
+      } else {
+        this.session.clearAll();
+      }
       const completeEvent: ChatEvent = {
         type: 'form:complete',
         sessionId: this.session.getSessionId(),

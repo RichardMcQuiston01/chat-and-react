@@ -90,6 +90,67 @@ describe('AdapterSessionManager', () => {
     expect(reloaded.loadInput('q2')).toBe('b');
   });
 
+  describe('complete()', () => {
+    it('clears the session, records the completion and saves it', async () => {
+      const adapter = memoryAdapter();
+      const manager = await AdapterSessionManager.create(adapter);
+      manager.saveProgress('p1', { q1: 'a' });
+      manager.saveInput('q1', 'a');
+      manager.complete();
+      await manager.flush();
+
+      expect(manager.loadProgress()).toBeNull();
+      expect(manager.loadInput('q1')).toBeNull();
+      expect(manager.completedAt()).not.toBeNull();
+
+      const reloaded = await AdapterSessionManager.create(adapter);
+      expect(reloaded.loadProgress()).toBeNull();
+      expect(reloaded.loadInput('q1')).toBeNull();
+      expect(reloaded.completedAt()).toBe(manager.completedAt());
+    });
+
+    it('is seen by another tab that is already open', async () => {
+      const adapter = memoryAdapter();
+      const tabA = await AdapterSessionManager.create(adapter);
+      const tabB = await AdapterSessionManager.create(adapter);
+      tabA.saveProgress('p1', { q1: 'a' });
+      await tabA.flush();
+      expect(tabB.loadProgress()?.currentPageId).toBe('p1');
+
+      tabA.complete();
+      await tabA.flush();
+
+      expect(tabB.loadProgress()).toBeNull();
+      expect(tabB.completedAt()).not.toBeNull();
+    });
+
+    it('is forgotten by clearAll()', async () => {
+      const manager = await AdapterSessionManager.create(memoryAdapter());
+      manager.complete();
+      manager.clearAll();
+      expect(manager.completedAt()).toBeNull();
+    });
+
+    it("keeps none of another tab's inputs when it waits to be saved and one arrives", async () => {
+      const adapter = memoryAdapter();
+      const tabA = await AdapterSessionManager.create(adapter);
+      const failOn: Partial<Record<'get' | 'set' | 'remove', string>> = {};
+      const tabB = await AdapterSessionManager.create(failing(adapter, failOn), {
+        onError: () => {},
+      });
+
+      failOn.set = 'unavailable';
+      tabB.complete();
+      await tabB.flush();
+      tabA.saveInput('late', 'typed in the other tab');
+      await tabA.flush();
+
+      expect(tabB.loadInput('late')).toBeNull();
+      expect(tabB.loadProgress()).toBeNull();
+      expect(tabB.completedAt()).not.toBeNull();
+    });
+  });
+
   it('clearInput forgets one input and saves that', async () => {
     const adapter = memoryAdapter();
     const manager = await AdapterSessionManager.create(adapter);

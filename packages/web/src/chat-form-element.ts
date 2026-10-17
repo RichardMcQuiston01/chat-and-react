@@ -40,6 +40,12 @@ function hashString(text: string): string {
 }
 
 /**
+ * How long a tab remembers that the form was finished in another tab. A tab that is still open
+ * after this long treats a cleared session as cleared, not finished, and starts the form again.
+ */
+const COMPLETED_ELSEWHERE_MS = 24 * 60 * 60 * 1000;
+
+/**
  * Keys written by versions up to 0.7.0 started with `car:inst:` and a random UUID that changed on
  * every page load, so they could never be read again.
  */
@@ -73,10 +79,14 @@ class FormStorage {
 
   /**
    * True for a full `localStorage` key that holds this form's session (its id or progress), as
-   * opposed to another form's key or one of this form's unsubmitted answers.
+   * opposed to another form's key, one of this form's unsubmitted answers, or its completed marker.
    */
   isSessionKey(fullKey: string): boolean {
-    return fullKey.startsWith(this.prefix) && !fullKey.startsWith(`${this.prefix}car:input:`);
+    return (
+      fullKey.startsWith(this.prefix) &&
+      !fullKey.startsWith(`${this.prefix}car:input:`) &&
+      !fullKey.startsWith(`${this.prefix}car:completed:`)
+    );
   }
 
   getItem(key: string): string | null {
@@ -160,6 +170,11 @@ export class ChatFormElement extends HTMLElement {
   /** The parsed `schema` attribute, kept so the form can be restarted by `resync()`. */
   private schema: unknown = null;
   private resyncing: Promise<boolean> | null = null;
+  /**
+   * The saved progress and completion time, as JSON, the last time this tab read or wrote them. If
+   * they differ when this tab is about to submit a page, another tab has moved the form on.
+   */
+  private knownProgress = '[null,null]';
 
   /** Visible questions of the current page, asked one at a time. */
   private pageQuestions: ChatQuestion[] = [];
@@ -230,6 +245,7 @@ export class ChatFormElement extends HTMLElement {
   clearProgress(): boolean {
     if (this.session) {
       this.session.clearAll();
+      this.rememberSavedProgress();
       return true;
     }
     if (this.registry.getStorageAdapter()) return false;
@@ -306,6 +322,58 @@ export class ChatFormElement extends HTMLElement {
     this.pendingRouteIndex = 0;
     this.editingRouteIndex = null;
     this.suspendedPage = null;
+  }
+
+  /** Notes the saved progress as this tab now knows it. */
+  private rememberSavedProgress(): void {
+    this.knownProgress = this.savedState();
+  }
+
+  /** The saved progress and completion time, as JSON, for telling whether another tab changed them. */
+  private savedState(): string {
+    return JSON.stringify([
+      this.session?.loadProgress() ?? null,
+      this.session?.completedAt?.() ?? null,
+    ]);
+  }
+
+  /**
+   * Called just before this tab saves a page. If another tab changed the saved progress since this
+   * tab last read or wrote it, this tab is behind: saving would overwrite the newer progress (or
+   * send answers a second time), so nothing is saved and the form follows the other tab instead.
+   * If the other tab finished the form, this tab shows the finished form without sending anything.
+   *
+   * Returns `true` when the submit was handled here and must not go ahead.
+   */
+  private handleStaleSubmit(): boolean {
+    if (!this.session || !this.controller) return false;
+    if (!this.controller.getOptions().userResumable) return false;
+
+    if (this.savedState() === this.knownProgress) return false;
+
+    const saved: SessionProgress | null = this.session.loadProgress();
+    const completedAt: number | null = this.session.completedAt?.() ?? null;
+    const completed: boolean =
+      saved === null && completedAt !== null && Date.now() - completedAt <= COMPLETED_ELSEWHERE_MS;
+    this.dispatchEvent(
+      new CustomEvent('chat-stale-submit', {
+        detail: { progress: saved, completed },
+        bubbles: true,
+      }),
+    );
+    if (completed) {
+      this.showFinishedElsewhere();
+    } else {
+      void this.resync();
+    }
+    return true;
+  }
+
+  /** Leaves the chat as it is but takes away the input and the Edit icons, as when a form ends. */
+  private showFinishedElsewhere(): void {
+    this.renderer?.clearInputArea();
+    this.renderer?.removeEditButtons();
+    this.rememberSavedProgress();
   }
 
   /** Tells the page that another tab changed this form's saved progress. */
@@ -466,6 +534,7 @@ export class ChatFormElement extends HTMLElement {
       return;
     }
 
+    this.rememberSavedProgress();
     this.resolveOptions();
     this.renderer?.setEditable(this.allowEdit, (routeIndex, questionId) =>
       this.handleEdit(routeIndex, questionId),
@@ -757,8 +826,10 @@ export class ChatFormElement extends HTMLElement {
       return;
     }
 
+    if (this.handleStaleSubmit()) return;
     const submittedQuestions: ChatQuestion[] = this.pageQuestions;
     this.controller.submitPage(this.pageAnswers);
+    this.rememberSavedProgress();
     this.clearDrafts(submittedQuestions);
 
     // Advance to the next page if the form is not complete.
@@ -832,8 +903,10 @@ export class ChatFormElement extends HTMLElement {
   private finishEdit(): void {
     if (!this.controller || !this.renderer || this.editingRouteIndex === null) return;
 
+    if (this.handleStaleSubmit()) return;
     const editedIndex = this.editingRouteIndex;
     const outcome = this.controller.submitPage(this.pageAnswers);
+    this.rememberSavedProgress();
     this.editingRouteIndex = null;
 
     const suspended = this.suspendedPage;

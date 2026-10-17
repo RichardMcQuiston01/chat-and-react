@@ -58,6 +58,19 @@ async function mountForm(page: Page): Promise<void> {
     form.setAttribute('storage-key', 'tabs');
     document.body.appendChild(form);
     // Keep what the form tells the page, for the test to read.
+    const heard = window as unknown as {
+      externalChanges: unknown[];
+      staleSubmits: unknown[];
+      completions: unknown[];
+    };
+    heard.staleSubmits = [];
+    heard.completions = [];
+    form.addEventListener('chat-stale-submit', (event) => {
+      heard.staleSubmits.push((event as CustomEvent).detail);
+    });
+    form.addEventListener('chat-form-complete', (event) => {
+      heard.completions.push((event as CustomEvent).detail);
+    });
     (window as unknown as { externalChanges: unknown[] }).externalChanges = [];
     form.addEventListener('chat-external-change', (event) => {
       (window as unknown as { externalChanges: unknown[] }).externalChanges.push(
@@ -126,5 +139,64 @@ describe('<chat-form> with the same form open in two tabs', () => {
         .externalChanges;
       return changes.at(-1)?.progress === null;
     });
+  });
+
+  it('does not let a tab that is behind overwrite the newer progress', async () => {
+    const { thisTab, otherTab } = await openTwoTabs();
+    await mountForm(thisTab);
+    await mountForm(otherTab);
+    await otherTab.locator('chat-form input[type="radio"]').first().check();
+    await otherTab.locator('chat-form [part="submit-btn"]').click();
+    await thisTab.waitForFunction(
+      () => (window as unknown as { externalChanges: unknown[] }).externalChanges.length > 0,
+    );
+
+    // "B" would finish the form here and wipe the other tab's progress.
+    await thisTab.locator('chat-form input[type="radio"]').nth(1).check();
+    await thisTab.locator('chat-form [part="submit-btn"]').click();
+
+    await thisTab.waitForFunction(() =>
+      document.querySelector('chat-form')?.shadowRoot?.textContent?.includes('Tell us more'),
+    );
+    const heard = await thisTab.evaluate(() => {
+      const window_ = window as unknown as { staleSubmits: unknown[]; completions: unknown[] };
+      return { stale: window_.staleSubmits.length, completions: window_.completions.length };
+    });
+    expect(heard).toEqual({ stale: 1, completions: 0 });
+  });
+
+  it('shows the finished form, and sends nothing again, when the other tab finished it', async () => {
+    const { thisTab, otherTab } = await openTwoTabs();
+    await mountForm(thisTab);
+    await mountForm(otherTab);
+    await otherTab.locator('chat-form input[type="radio"]').first().check();
+    await otherTab.locator('chat-form [part="submit-btn"]').click();
+    await otherTab.waitForFunction(() =>
+      document.querySelector('chat-form')?.shadowRoot?.textContent?.includes('Tell us more'),
+    );
+    await otherTab.locator('chat-form input[type="text"]').fill('done');
+    await otherTab.locator('chat-form [part="submit-btn"]').click();
+    await otherTab.waitForFunction(
+      () => (window as unknown as { completions: unknown[] }).completions.length === 1,
+    );
+
+    // This tab never saw the form move on, and still shows the first page.
+    await thisTab.locator('chat-form input[type="radio"]').nth(1).check();
+    await thisTab.locator('chat-form [part="submit-btn"]').click();
+
+    const heard = await thisTab.evaluate(() => {
+      const window_ = window as unknown as {
+        staleSubmits: { completed: boolean }[];
+        completions: unknown[];
+      };
+      return {
+        stale: window_.staleSubmits.map((detail) => detail.completed),
+        completions: window_.completions.length,
+        submitButton: Boolean(
+          document.querySelector('chat-form')?.shadowRoot?.querySelector('[part="submit-btn"]'),
+        ),
+      };
+    });
+    expect(heard).toEqual({ stale: [true], completions: 0, submitButton: false });
   });
 });

@@ -1944,6 +1944,251 @@ describe('<chat-form> changes made in another tab', () => {
   });
 });
 
+describe('<chat-form> with two tabs of one form', () => {
+  const elements: HTMLElement[] = [];
+
+  afterEach(() => {
+    vi.useRealTimers();
+    for (const element of elements.splice(0)) element.remove();
+  });
+
+  function add(attributes: Record<string, string> = {}): ChatFormElement {
+    const form = document.createElement('chat-form') as ChatFormElement;
+    form.setAttribute('schema', twoPageSchema);
+    form.setAttribute('storage-key', 'tabs');
+    for (const [name, value] of Object.entries(attributes)) form.setAttribute(name, value);
+    document.body.appendChild(form);
+    elements.push(form);
+    return form;
+  }
+
+  function addWithAdapter(adapter: ReturnType<typeof memoryAdapter>): ChatFormElement {
+    const form = document.createElement('chat-form') as ChatFormElement;
+    form.setAttribute('schema', twoPageSchema);
+    form.setStorageAdapter(adapter);
+    document.body.appendChild(form);
+    elements.push(form);
+    return form;
+  }
+
+  /** Picks `choice` on page 1 and presses Continue. */
+  function pick(form: HTMLElement, choice: 'A' | 'B'): void {
+    const radio = requireElement<HTMLInputElement>(getShadow(form), `input[value="${choice}"]`);
+    radio.checked = true;
+    requireElement(getShadow(form), '[part="submit-btn"]').dispatchEvent(new Event('click'));
+  }
+
+  /** Types an answer on page 2 and presses Continue, which finishes the form. */
+  function finish(form: HTMLElement): void {
+    requireElement<HTMLInputElement>(getShadow(form), 'input').value = 'done';
+    requireElement(getShadow(form), '[part="submit-btn"]').dispatchEvent(new Event('click'));
+  }
+
+  const shows = (form: HTMLElement, text: string): boolean =>
+    (getShadow(form).textContent ?? '').includes(text);
+
+  const savedPage = (): string | undefined => {
+    const key = Array.from({ length: localStorage.length }, (_, index) => localStorage.key(index))
+      .filter((name): name is string => name !== null)
+      .find((name) => name.startsWith('car:form:tabs:car:progress:'));
+    return key ? JSON.parse(localStorage.getItem(key) ?? '{}').currentPageId : undefined;
+  };
+
+  /** Collects what the form sends to the page. */
+  function listen(form: HTMLElement): {
+    stale: { progress: { currentPageId: string } | null; completed: boolean }[];
+    submitted: number;
+    completed: number;
+  } {
+    const heard = {
+      stale: [] as { progress: { currentPageId: string } | null; completed: boolean }[],
+      submitted: 0,
+      completed: 0,
+    };
+    form.addEventListener('chat-stale-submit', (event) =>
+      heard.stale.push((event as CustomEvent).detail),
+    );
+    form.addEventListener('chat-page-submit', () => {
+      heard.submitted += 1;
+    });
+    form.addEventListener('chat-form-complete', () => {
+      heard.completed += 1;
+    });
+    return heard;
+  }
+
+  describe('a tab that is behind', () => {
+    it('does not overwrite the newer progress, and follows it instead', async () => {
+      const behind = add();
+      const ahead = add();
+      const heard = listen(behind);
+      pick(ahead, 'A');
+      expect(savedPage()).toBe('p2');
+
+      // Choosing B here would finish the form and wipe the other tab's progress.
+      pick(behind, 'B');
+
+      expect(heard.stale).toHaveLength(1);
+      expect(heard.stale[0]?.progress?.currentPageId).toBe('p2');
+      expect(heard.stale[0]?.completed).toBe(false);
+      expect(heard.submitted).toBe(0);
+      expect(heard.completed).toBe(0);
+      expect(savedPage()).toBe('p2');
+      await vi.waitFor(() => expect(shows(behind, 'Tell us more')).toBe(true));
+      expect(shows(behind, 'Pick?')).toBe(false);
+    });
+
+    it('can carry on from the page it followed to the end', async () => {
+      const behind = add();
+      const ahead = add();
+      const heard = listen(behind);
+      pick(ahead, 'A');
+      pick(behind, 'B');
+      await vi.waitFor(() => expect(shows(behind, 'Tell us more')).toBe(true));
+
+      finish(behind);
+
+      expect(heard.completed).toBe(1);
+      expect(heard.stale).toHaveLength(1);
+    });
+
+    it('is not taken for behind when it is the only tab', () => {
+      const only = add();
+      const heard = listen(only);
+      pick(only, 'A');
+      finish(only);
+
+      expect(heard.stale).toEqual([]);
+      expect(heard.submitted).toBe(2);
+      expect(heard.completed).toBe(1);
+    });
+
+    it('is not checked when user-resumable is false', () => {
+      const ahead = add();
+      pick(ahead, 'A');
+      const notSaving = add({ 'user-resumable': 'false' });
+      const heard = listen(notSaving);
+
+      pick(notSaving, 'B');
+
+      expect(heard.stale).toEqual([]);
+      expect(heard.completed).toBe(1);
+    });
+  });
+
+  describe('a tab that is open when another tab finishes the form', () => {
+    it('shows the finished form and sends nothing a second time', () => {
+      const behind = add();
+      const ahead = add();
+      const heard = listen(behind);
+      pick(ahead, 'A');
+      finish(ahead);
+
+      pick(behind, 'B');
+
+      expect(heard.stale).toHaveLength(1);
+      expect(heard.stale[0]?.progress).toBeNull();
+      expect(heard.stale[0]?.completed).toBe(true);
+      expect(heard.submitted).toBe(0);
+      expect(heard.completed).toBe(0);
+      expect(getShadow(behind).querySelector('[part="input-area"]')).toBeNull();
+      expect(getShadow(behind).querySelector('[part="submit-btn"]')).toBeNull();
+    });
+
+    it('starts again from the first page once a day has passed', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      const behind = add();
+      const ahead = add();
+      const heard = listen(behind);
+      pick(ahead, 'A');
+      finish(ahead);
+      vi.setSystemTime(Date.now() + 25 * 60 * 60 * 1000);
+
+      pick(behind, 'B');
+
+      expect(heard.stale[0]?.completed).toBe(false);
+      expect(heard.completed).toBe(0);
+      vi.useRealTimers();
+      await vi.waitFor(() => expect(shows(behind, 'Pick?')).toBe(true));
+    });
+
+    it('starts again from the first page when the other tab only cleared it', async () => {
+      const ahead = add();
+      pick(ahead, 'A');
+      const behind = add();
+      expect(shows(behind, 'Tell us more')).toBe(true);
+      const heard = listen(behind);
+
+      expect(ahead.clearProgress()).toBe(true);
+      finish(behind);
+
+      expect(heard.stale).toEqual([{ progress: null, completed: false }]);
+      expect(heard.completed).toBe(0);
+      await vi.waitFor(() => expect(shows(behind, 'Pick?')).toBe(true));
+    });
+
+    it('lets the visitor do the form again in the tab that finished it', () => {
+      const first = add();
+      pick(first, 'A');
+      finish(first);
+      first.remove();
+
+      const again = add();
+      const heard = listen(again);
+      pick(again, 'A');
+      finish(again);
+
+      expect(heard.stale).toEqual([]);
+      expect(heard.completed).toBe(1);
+    });
+  });
+
+  describe('with a storage adapter', () => {
+    it('follows a newer tab instead of overwriting it', async () => {
+      const adapter = memoryAdapter();
+      const behind = addWithAdapter(adapter);
+      await vi.waitFor(() => expect(getShadow(behind).querySelector('input')).not.toBeNull());
+      const ahead = addWithAdapter(adapter);
+      await vi.waitFor(() => expect(getShadow(ahead).querySelector('input')).not.toBeNull());
+      const heard = listen(behind);
+      pick(ahead, 'A');
+      await vi.waitFor(() => expect(shows(ahead, 'Tell us more')).toBe(true));
+      await new Promise((resolve) => setTimeout(resolve, 20));
+
+      pick(behind, 'B');
+
+      expect(heard.stale[0]?.progress?.currentPageId).toBe('p2');
+      expect(heard.completed).toBe(0);
+      await vi.waitFor(() => expect(shows(behind, 'Tell us more')).toBe(true));
+    });
+
+    it('shows the finished form when the other tab finished it', async () => {
+      const adapter = memoryAdapter();
+      const behind = addWithAdapter(adapter);
+      await vi.waitFor(() => expect(getShadow(behind).querySelector('input')).not.toBeNull());
+      const ahead = addWithAdapter(adapter);
+      await vi.waitFor(() => expect(getShadow(ahead).querySelector('input')).not.toBeNull());
+      const heard = listen(behind);
+      const changes: unknown[] = [];
+      behind.addEventListener('chat-external-change', (event) =>
+        changes.push((event as CustomEvent).detail),
+      );
+      pick(ahead, 'A');
+      await vi.waitFor(() => expect(shows(ahead, 'Tell us more')).toBe(true));
+      finish(ahead);
+      await vi.waitFor(() =>
+        expect((changes.at(-1) as { progress: unknown } | undefined)?.progress).toBeNull(),
+      );
+
+      pick(behind, 'B');
+
+      expect(heard.stale[0]?.completed).toBe(true);
+      expect(heard.completed).toBe(0);
+      expect(getShadow(behind).querySelector('[part="submit-btn"]')).toBeNull();
+    });
+  });
+});
+
 describe('<chat-form> resuming a saved session', () => {
   const elements: HTMLElement[] = [];
 
