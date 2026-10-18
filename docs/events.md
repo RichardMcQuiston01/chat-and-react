@@ -85,7 +85,7 @@ What the tab does next depends on `completed`:
 - **`false`:** the tab follows the newer one. It does what `resync()` does and restarts on the saved page. If the saved progress was cleared, `progress` is `null` and the form starts again from the first page. The answers the visitor typed on the page they were behind on are not saved.
 - **`true`:** the other tab finished the form (within the last 24 hours). This tab shows the form as finished: the input and the Edit icons go away, and the chat history stays.
 
-Use the event to tell the visitor, for example "This form was already completed in another tab". The library shows no message of its own. Tabs are only compared when `userResumable` is `true`. Two forms with the same schema on one page share progress, so they can be "behind" each other in the same way.
+Use the event to tell the visitor, for example "This form was already completed in another tab". The library shows no message of its own. The check is best-effort, so your server should also ignore repeats; see [Several Tabs](several-tabs.md). Tabs are only compared when `userResumable` is `true`. Two forms with the same schema on one page share progress, so they can be "behind" each other in the same way.
 
 [Back to Top](#events)
 
