@@ -8,6 +8,10 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+---
+
+## [0.12.0] — 2026-10-18
+
 ### Removed
 
 - **Breaking:** `@richardmcquiston01/chat-and-react` now exports only `ChatFormElement`. `AdapterRegistry`, `Renderer` and `getStyles` are internal. Theme with the CSS classes and custom properties, and set adapters with the element's `set*Adapter()` methods
