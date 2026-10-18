@@ -8,6 +8,10 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+---
+
+## [0.11.0] — 2026-10-17
+
 ### Added
 
 - `chat-stale-submit` event. A tab that is behind another tab no longer overwrites the newer saved progress when its visitor submits a page. Nothing is saved or sent: the tab fires `chat-stale-submit` (with `detail.progress` and `detail.completed`) and follows the newer tab, as `resync()` does. See [Events](docs/events.md#chat-stale-submit)
