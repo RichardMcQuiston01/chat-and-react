@@ -2,9 +2,9 @@
 
 [Back to README](../README.md)
 
-| [`chat-page-submit`](#chat-page-submit) | [`chat-form-complete`](#chat-form-complete) | [`chat-external-change`](#chat-external-change) | [`chat-stale-submit`](#chat-stale-submit) | [Listening for events](#listening-for-events) |
+| [`chat-page-submit`](#chat-page-submit) | [`chat-form-complete`](#chat-form-complete) | [`chat-external-change`](#chat-external-change) | [`chat-stale-submit`](#chat-stale-submit) | [`chat-error`](#chat-error) | [Listening for events](#listening-for-events) |
 
-The form sends the first two events as the visitor works through it. The other two tell you when another tab changed the saved progress. All are browser `CustomEvent`s that bubble up the page. The data is in `event.detail`.
+The form sends the first two events as the visitor works through it. The next two tell you when another tab changed the saved progress, and `chat-error` tells you the form could not start. All are browser `CustomEvent`s that bubble up the page. The data is in `event.detail`.
 
 ## `chat-page-submit`
 
@@ -86,6 +86,40 @@ What the tab does next depends on `completed`:
 - **`true`:** the other tab finished the form (within the last 24 hours). This tab shows the form as finished: the input and the Edit icons go away, and the chat history stays.
 
 Use the event to tell the visitor, for example "This form was already completed in another tab". The library shows no message of its own. The check is best-effort, so your server should also ignore repeats; see [Several Tabs](several-tabs.md). Tabs are only compared when `userResumable` is `true`. Two forms with the same schema on one page share progress, so they can be "behind" each other in the same way.
+
+[Back to Top](#events)
+
+## `chat-error`
+
+Fires when the form cannot start. It is the only way your page learns that a form did not appear, because the library shows no message of its own.
+
+```ts
+{
+  code: "SCHEMA_INVALID" | "ADAPTER_ERROR";
+  message: string; // what went wrong, for example 'x-chat-version must be "1"'
+  cause?: unknown; // the underlying error, when there is one
+  source?: string;
+  timestamp?: string; // ISO 8601
+}
+```
+
+It fires when:
+
+- **The `schema` attribute is not valid JSON.** `code` is `SCHEMA_INVALID` and `message` is `schema attribute is not valid JSON`.
+- **The schema is not a valid chat schema.** `code` is `SCHEMA_INVALID` and `message` names the problem, such as an unknown `x-chat-version`, a duplicate page `id`, or a `branching` list that does not end with an `always` rule.
+- **Your `InputAdapter` throws** while turning the schema into the native format. `code` is `ADAPTER_ERROR`, and `cause` holds what it threw.
+
+The form does not start after a `chat-error`. For the second and third cases the error is also sent to the [`ErrorLogAdapter`](custom-adapters.md); the invalid JSON case is not.
+
+Errors that do not stop the form, such as storage being unavailable or an `OutputAdapter` that throws, do **not** fire this event. They go only to the `ErrorLogAdapter`, and the form keeps running. By default that writes to `console.error`.
+
+`event.detail` is the error the library raised. If something unexpected throws while the form starts, `detail` is whatever was thrown, so check that `detail.code` exists before you use it.
+
+```js
+el.addEventListener("chat-error", (e) => {
+  showBanner(`This form could not load (${e.detail?.code ?? "unknown"}).`);
+});
+```
 
 [Back to Top](#events)
 

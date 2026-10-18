@@ -10,6 +10,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- [`chat-error`](docs/events.md#chat-error) is now described in the Events docs: when it fires, what `event.detail` holds, and which errors do not fire it
 - [Versioning, Support and Deprecation](docs/versioning-policy.md): what counts as public API, how version numbers change, support windows, the deprecation process, schema versioning and saved data. The numbers are draft defaults that take effect at 1.0.0
 - [Several Tabs](docs/several-tabs.md): what is protected when a form is open in two tabs, the limits of the stale-tab check (best-effort, not atomic), and how to make a server ignore repeats
 
