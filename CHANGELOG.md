@@ -8,6 +8,10 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- The `Publish` workflow publishes a version with a prerelease part (such as `1.0.0-rc.1`) under the `next` npm tag, so a release candidate never becomes `latest`. Other versions still go to `latest`
+
 ### Added
 
 - [`chat-error`](docs/events.md#chat-error) is now described in the Events docs: when it fires, what `event.detail` holds, and which errors do not fire it
