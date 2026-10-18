@@ -1,5 +1,7 @@
 # Export audit (1.0 readiness)
 
+> Decided: the internal candidates and the re-exports were removed in 0.12. See the CHANGELOG.
+
 Every export from the three published entry points, with a proposed label. **Public** means covered by semver from 1.0. **Internal** means no longer exported, or exported but documented as unsupported.
 
 Evidence: whether `docs/` or the README mentions it, and whether another package or the browser tests import it.

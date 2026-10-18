@@ -16,8 +16,6 @@
       "version": "0.11.0",
       "dependencies": {
         "@richardmcquiston01/chat-and-react-core": "workspace:*",
-        "@richardmcquiston01/error-log-adapter": "^0.2.0",
-        "@richardmcquiston01/storage-adapters": "^0.5.0",
       },
       "devDependencies": {
         "@types/node": "^20.0.0",
@@ -40,6 +38,7 @@
       "version": "0.0.0",
       "devDependencies": {
         "@richardmcquiston01/error-log-adapter": "^0.2.0",
+        "@richardmcquiston01/storage-adapters": "^0.5.0",
         "@types/node": "^20.0.0",
         "esbuild": "^0.27.0",
         "playwright": "^1.50.0",
