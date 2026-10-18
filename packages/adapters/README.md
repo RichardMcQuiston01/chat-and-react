@@ -43,11 +43,11 @@ const adapter = new WebhookOutputAdapter("https://api.example.com/events", {
 - **`WebStorageErrorAdapter`** / **`IndexedDbErrorAdapter`** — keep errors in the browser
 - **`CompositeErrorAdapter`** — send each error to several adapters
 
-All are re-exported from [`@richardmcquiston01/error-log-adapter`](https://www.npmjs.com/package/@richardmcquiston01/error-log-adapter).
+All are imported from [`@richardmcquiston01/error-log-adapter`](https://www.npmjs.com/package/@richardmcquiston01/error-log-adapter).
 
 ## Storage adapters
 
-- **`sqliteAdapter`**, **`fileAdapter`**, **`jsonFileAdapter`** — save form progress on a server, re-exported from [`@richardmcquiston01/storage-adapters`](https://www.npmjs.com/package/@richardmcquiston01/storage-adapters). See [Storage Adapters](https://github.com/RichardMcQuiston01/chat-and-react/blob/main/docs/storage-adapters.md).
+- **`sqliteAdapter`**, **`fileAdapter`**, **`jsonFileAdapter`** — save form progress on a server, imported from [`@richardmcquiston01/storage-adapters`](https://www.npmjs.com/package/@richardmcquiston01/storage-adapters). See [Storage Adapters](https://github.com/RichardMcQuiston01/chat-and-react/blob/main/docs/storage-adapters.md).
 
 ## Input adapters
 
