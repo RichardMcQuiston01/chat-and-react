@@ -1,5 +1,5 @@
-import { localStorageAdapter } from '@richardmcquiston01/chat-and-react-core';
 import { memoryAdapter } from '@richardmcquiston01/storage-adapters';
+import { localStorageAdapter } from '@richardmcquiston01/storage-adapters/browser';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import './index.js'; // registers <chat-form>
 import type { ChatFormElement } from './chat-form-element.js';

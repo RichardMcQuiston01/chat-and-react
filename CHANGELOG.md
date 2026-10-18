@@ -10,6 +10,21 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.12.0] — 2026-10-18
+
+### Removed
+
+- **Breaking:** `@richardmcquiston01/chat-and-react` now exports only `ChatFormElement`. `AdapterRegistry`, `Renderer` and `getStyles` are internal. Theme with the CSS classes and custom properties, and set adapters with the element's `set*Adapter()` methods
+- **Breaking:** `@richardmcquiston01/chat-and-react-core` no longer exports `RuleEngine`, `StorageBackend`, `RouteEntry` or `SubmitOutcome`
+- **Breaking:** core and adapters no longer re-export what other packages own. Import these from `@richardmcquiston01/storage-adapters` (`localStorageAdapter`, `sessionStorageAdapter`, `indexedDbAdapter`, `sqliteAdapter`, `fileAdapter`, `jsonFileAdapter` and their option types, `/browser`, `/indexeddb`, `/sqlite`, `/file`, `/json-file`) and `@richardmcquiston01/error-log-adapter` (every `*ErrorAdapter`, `createErrorLogStore`, `buildCreateErrorLogTableSql` and their option types). Core still exports the `StorageAdapter`, `ErrorLogEntry` and `ErrorLogResult` types that appear in its own signatures
+- `@richardmcquiston01/chat-and-react-adapters` no longer depends on `error-log-adapter` or `storage-adapters`
+
+### Changed
+
+- Core's entry point lists its type exports by name instead of `export *`, so a new type is not public by accident
+
+---
+
 ## [0.11.0] — 2026-10-17
 
 ### Added

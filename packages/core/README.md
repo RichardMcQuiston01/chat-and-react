@@ -41,7 +41,7 @@ controller.submitPage({ question_id: "answer value" });
 - `SessionManager` — session ID and progress persistence with an injectable `StorageBackend`
 - `ChatController` — page-graph navigation, answer accumulation, event emission (`page:submit`, `form:complete`)
 - Built-in adapters: `IdentityInputAdapter`, `BrowserEventAdapter`, `ConsoleErrorAdapter`
-- `AdapterSessionManager` — saves progress through any storage adapter; `localStorageAdapter`, `sessionStorageAdapter` and `indexedDbAdapter` are re-exported from `@richardmcquiston01/storage-adapters`
+- `AdapterSessionManager` — saves progress through any storage adapter; the `localStorageAdapter`, `sessionStorageAdapter` and `indexedDbAdapter` it takes come from `@richardmcquiston01/storage-adapters`
 
 ## Full documentation
 
