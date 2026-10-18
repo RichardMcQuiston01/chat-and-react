@@ -8,6 +8,10 @@ name: Publish
 # with real versions, and the tarballs are published with `npm publish` so they get
 # provenance. Publishing with `npm publish` from a package directory would leave
 # `workspace:*` in the published package.json, which npm cannot install.
+#
+# A version with a prerelease part (1.0.0-rc.1) is published under the `next` npm tag, so it
+# never becomes `latest`. Any other version is published under `latest`. Mark the GitHub
+# release as a pre-release for a prerelease version.
 on:
   release:
     types: [published]
@@ -71,7 +75,13 @@ jobs:
             echo "Release tag $GITHUB_REF_NAME does not match package version v$VERSION" >&2
             exit 1
           fi
+          case "$VERSION" in
+            *-*) NPM_TAG=next ;;
+            *) NPM_TAG=latest ;;
+          esac
+          echo "Publishing $VERSION under the npm tag \"$NPM_TAG\""
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "NPM_TAG=$NPM_TAG" >> "$GITHUB_ENV"
 
       # Core first: adapters and web depend on it.
       - name: Pack and publish
@@ -95,9 +105,9 @@ jobs:
               exit 1
             fi
             if [ "$DRY_RUN" = "true" ]; then
-              npm publish "$TARBALL" --access public --dry-run
+              npm publish "$TARBALL" --access public --tag "$NPM_TAG" --dry-run
             else
-              npm publish "$TARBALL" --access public --provenance
+              npm publish "$TARBALL" --access public --tag "$NPM_TAG" --provenance
             fi
           done
 

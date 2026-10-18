@@ -81,6 +81,6 @@ The form saves progress, unsubmitted answers and a finished-form record in stora
 
 ## Prereleases
 
-Before a major version, release candidates (`1.0.0-rc.1`) let you try the change. A release candidate is not covered by this page: it can still change before the release, and it is not published as `latest`.
+Before a major version, release candidates (`1.0.0-rc.1`) let you try the change. A release candidate is not covered by this page: it can still change before the release. It is published under the `next` npm tag, never `latest`, so `npm install` does not pick it up. To try one, install it by name, for example `npm install @richardmcquiston01/chat-and-react@next`.
 
 [Back to Top](#versioning-support-and-deprecation)
