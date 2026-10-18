@@ -44,7 +44,7 @@ Each release line is supported on a best-effort basis by the maintainer:
 | The last minor of the previous major | Security fixes and critical bug fixes, for **6 months** after the next major is released |
 | Anything older | Nothing. Upgrade |
 
-Fixes are released as patch versions. There is no guaranteed response time. To report a security problem, contact the maintainer privately through GitHub instead of opening a public issue.
+Fixes are released as patch versions. There is no guaranteed response time. To report a security problem, use GitHub's private vulnerability reporting instead of opening a public issue. See [SECURITY.md](../SECURITY.md).
 
 ## Deprecation
 
