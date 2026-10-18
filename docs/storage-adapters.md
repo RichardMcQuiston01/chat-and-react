@@ -16,19 +16,19 @@ By default, progress is saved in `localStorage`. A storage adapter lets you save
 
 ## Adapters you can use
 
-| Adapter | Saves to | Import from |
+| Adapter | Saves to | Import from `@richardmcquiston01/…` |
 | --- | --- | --- |
-| `localStorageAdapter()` | `localStorage` (survives closing the tab) | `chat-and-react-core` |
-| `sessionStorageAdapter()` | `sessionStorage` (lasts as long as the tab) | `chat-and-react-core` |
-| `indexedDbAdapter()` | IndexedDB (large values; other tabs hear about changes) | `chat-and-react-core` |
-| `sqliteAdapter({ database })` | a SQLite table, through `node:sqlite`, `bun:sqlite` or any driver | `chat-and-react-adapters` |
-| `fileAdapter({ directory, fileSystem })` | one file per key in a folder | `chat-and-react-adapters` |
-| `jsonFileAdapter({ path, fileSystem })` | one JSON file for all keys (best for small data) | `chat-and-react-adapters` |
+| `localStorageAdapter()` | `localStorage` (survives closing the tab) | `storage-adapters/browser` |
+| `sessionStorageAdapter()` | `sessionStorage` (lasts as long as the tab) | `storage-adapters/browser` |
+| `indexedDbAdapter()` | IndexedDB (large values; other tabs hear about changes) | `storage-adapters/indexeddb` |
+| `sqliteAdapter({ database })` | a SQLite table, through `node:sqlite`, `bun:sqlite` or any driver | `storage-adapters/sqlite` |
+| `fileAdapter({ directory, fileSystem })` | one file per key in a folder | `storage-adapters/file` |
+| `jsonFileAdapter({ path, fileSystem })` | one JSON file for all keys (best for small data) | `storage-adapters/json-file` |
 
-`fileAdapter` and `jsonFileAdapter` take a `fileSystem`. In Node, Bun or Deno, use `nodeFileSystem()` from `@richardmcquiston01/storage-adapters/file/node`. It isn't re-exported here because it imports `node:fs`. The file adapters are safe within one process only. Use `sqliteAdapter` when more than one process writes.
+`fileAdapter` and `jsonFileAdapter` take a `fileSystem`. In Node, Bun or Deno, use `nodeFileSystem()` from `@richardmcquiston01/storage-adapters/file/node`. It has its own entry point because it imports `node:fs`. The file adapters are safe within one process only. Use `sqliteAdapter` when more than one process writes.
 
 ```ts
-import { jsonFileAdapter } from "@richardmcquiston01/chat-and-react-adapters";
+import { jsonFileAdapter } from "@richardmcquiston01/storage-adapters/json-file";
 import { nodeFileSystem } from "@richardmcquiston01/storage-adapters/file/node";
 
 const adapter = jsonFileAdapter({ path: "progress.json", fileSystem: nodeFileSystem() });
@@ -41,7 +41,7 @@ const adapter = jsonFileAdapter({ path: "progress.json", fileSystem: nodeFileSys
 Call `setStorageAdapter()` before the element is added to the page. The saved session loads first, so a returning visitor opens on the page they left.
 
 ```ts
-import { localStorageAdapter } from "@richardmcquiston01/chat-and-react-core";
+import { localStorageAdapter } from "@richardmcquiston01/storage-adapters/browser";
 
 const form = document.createElement("chat-form");
 form.setAttribute("schema", JSON.stringify(schema));
@@ -56,11 +56,8 @@ document.body.appendChild(form);
 `ChatController` is synchronous, so load the session first with `AdapterSessionManager.create()` and pass it in. Reads come from memory, and writes are saved in the background.
 
 ```ts
-import {
-  AdapterSessionManager,
-  ChatController,
-  localStorageAdapter,
-} from "@richardmcquiston01/chat-and-react-core";
+import { AdapterSessionManager, ChatController } from "@richardmcquiston01/chat-and-react-core";
+import { localStorageAdapter } from "@richardmcquiston01/storage-adapters/browser";
 
 const session = await AdapterSessionManager.create(localStorageAdapter(), {
   onError: (error) => myErrorAdapter.log(error),
@@ -75,7 +72,7 @@ If the adapter can't be reached, the form still works. Progress is kept in memor
 
 ## Several tabs
 
-`localStorageAdapter()` (from [`@richardmcquiston01/storage-adapters/browser`](https://www.npmjs.com/package/@richardmcquiston01/storage-adapters), re-exported by the core package) gives each saved value a revision and reports changes made in other tabs.
+`localStorageAdapter()` (from [`@richardmcquiston01/storage-adapters/browser`](https://www.npmjs.com/package/@richardmcquiston01/storage-adapters)) gives each saved value a revision and reports changes made in other tabs.
 
 - **Conflicts:** if two tabs save at once, they are merged. Answers are merged per question. A tab that only typed never overwrites another tab's progress. After three conflicts in a row, the save is abandoned and reported.
 - **Changes from another tab:** the session's copy is updated, and the element fires a [`chat-external-change`](events.md#chat-external-change) event with the new progress (`null` if the form was finished there). The form on screen is not moved; call `resync()` on the element to follow the other tab. With `AdapterSessionManager` on its own, the same notice is the `onExternalChange` option.

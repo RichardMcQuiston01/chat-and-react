@@ -3,11 +3,11 @@ import { createErrorLogStore, IndexedDbErrorAdapter } from '@richardmcquiston01/
 // Registers the <chat-form> element.
 import '../../web/src/index.js';
 import {
-  AdapterSessionManager,
-  indexedDbAdapter,
   localStorageAdapter,
   sessionStorageAdapter,
-} from '../../core/src/index.js';
+} from '@richardmcquiston01/storage-adapters/browser';
+import { indexedDbAdapter } from '@richardmcquiston01/storage-adapters/indexeddb';
+import { AdapterSessionManager } from '../../core/src/index.js';
 
 const lib = {
   AdapterSessionManager,

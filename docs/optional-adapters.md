@@ -4,7 +4,7 @@
 
 | [Output adapters](#output-adapters) | [Error-log adapters](#error-log-adapters) | [Storage adapters](#storage-adapters) | [Input adapters](#input-adapters) | [Using an adapter](#using-an-adapter) |
 
-The `@richardmcquiston01/chat-and-react-adapters` package has ready-made adapters. Install it next to the core package or the web component:
+The `@richardmcquiston01/chat-and-react-adapters` package has ready-made input and output adapters. Install it next to the core package or the web component. Error-log adapters come from `@richardmcquiston01/error-log-adapter` and storage adapters from `@richardmcquiston01/storage-adapters`; install those directly:
 
 ```bash
 npm install @richardmcquiston01/chat-and-react-adapters
@@ -53,7 +53,7 @@ const adapter = new WebSocketOutputAdapter(socket);
 
 ## Error-log adapters
 
-These come from [`@richardmcquiston01/error-log-adapter`](https://www.npmjs.com/package/@richardmcquiston01/error-log-adapter) and are re-exported here. `log` returns a result you can check, and a failing sink never throws.
+These come from [`@richardmcquiston01/error-log-adapter`](https://www.npmjs.com/package/@richardmcquiston01/error-log-adapter) and are imported from it directly. `log` returns a result you can check, and a failing sink never throws.
 
 | Adapter | Sends errors to | Works in |
 | --- | --- | --- |
@@ -69,7 +69,7 @@ These come from [`@richardmcquiston01/error-log-adapter`](https://www.npmjs.com/
 **`WebhookErrorAdapter`** sends errors to a webhook URL:
 
 ```ts
-import { WebhookErrorAdapter } from "@richardmcquiston01/chat-and-react-adapters";
+import { WebhookErrorAdapter } from "@richardmcquiston01/error-log-adapter";
 
 const adapter = new WebhookErrorAdapter("https://api.example.com/errors", {
   headers: { "X-Api-Key": "secret" },
@@ -80,7 +80,7 @@ const adapter = new WebhookErrorAdapter("https://api.example.com/errors", {
 
 ```ts
 import { MongoClient } from "mongodb";
-import { MongoDbErrorAdapter } from "@richardmcquiston01/chat-and-react-adapters";
+import { MongoDbErrorAdapter } from "@richardmcquiston01/error-log-adapter";
 
 const client = new MongoClient(process.env.MONGO_URI);
 await client.connect();
@@ -94,7 +94,7 @@ const adapter = new MongoDbErrorAdapter(collection);
 import {
   FlatFileErrorAdapter,
   JsonFileErrorAdapter,
-} from "@richardmcquiston01/chat-and-react-adapters";
+} from "@richardmcquiston01/error-log-adapter";
 
 const jsonLog = new JsonFileErrorAdapter("logs/errors.ndjson"); // one JSON object per line
 const arrayLog = new JsonFileErrorAdapter("logs/errors.json", { mode: "array", maxEntries: 500 });
@@ -105,7 +105,7 @@ const textLog = new FlatFileErrorAdapter("logs/errors.log", { maxBytes: 1_000_00
 
 ```ts
 import { Database } from "bun:sqlite";
-import { SqliteErrorAdapter } from "@richardmcquiston01/chat-and-react-adapters";
+import { SqliteErrorAdapter } from "@richardmcquiston01/error-log-adapter";
 
 const database = new Database("errors.db");
 const adapter = new SqliteErrorAdapter({ run: (sql, params) => database.run(sql, params as never[]) });
@@ -118,7 +118,7 @@ import {
   createErrorLogStore,
   IndexedDbErrorAdapter,
   WebStorageErrorAdapter,
-} from "@richardmcquiston01/chat-and-react-adapters";
+} from "@richardmcquiston01/error-log-adapter";
 
 const small = new WebStorageErrorAdapter(localStorage, { key: "my-app:errors", maxEntries: 50 });
 
@@ -134,7 +134,7 @@ request.onsuccess = () => {
 
 ```ts
 import { ConsoleErrorAdapter } from "@richardmcquiston01/chat-and-react-core";
-import { CompositeErrorAdapter, WebhookErrorAdapter } from "@richardmcquiston01/chat-and-react-adapters";
+import { CompositeErrorAdapter, WebhookErrorAdapter } from "@richardmcquiston01/error-log-adapter";
 
 const adapter = new CompositeErrorAdapter([
   new ConsoleErrorAdapter(),
@@ -144,7 +144,7 @@ const adapter = new CompositeErrorAdapter([
 
 ## Storage adapters
 
-The package also re-exports `sqliteAdapter`, `fileAdapter` and `jsonFileAdapter` from [`@richardmcquiston01/storage-adapters`](https://www.npmjs.com/package/@richardmcquiston01/storage-adapters), for saving form progress on a server. See [Storage Adapters](storage-adapters.md).
+`sqliteAdapter`, `fileAdapter` and `jsonFileAdapter` come from [`@richardmcquiston01/storage-adapters`](https://www.npmjs.com/package/@richardmcquiston01/storage-adapters), for saving form progress on a server. Import them from that package. See [Storage Adapters](storage-adapters.md).
 
 [Back to Top](#optional-adapters)
 
