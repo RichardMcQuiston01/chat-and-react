@@ -8,6 +8,10 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- [Several Tabs](docs/several-tabs.md): what is protected when a form is open in two tabs, the limits of the stale-tab check (best-effort, not atomic), and how to make a server ignore repeats
+
 ---
 
 ## [0.12.0] — 2026-10-18
