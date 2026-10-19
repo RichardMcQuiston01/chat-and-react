@@ -11,7 +11,6 @@ description: My git branching model and commit message conventions. Use whenever
 | --------- | --------------- |
 | `main`    | Live/production |
 | `dev`     | Development     |
-| `staging` | Staging         |
 
 ## Short-lived branches
 
@@ -23,8 +22,7 @@ description: My git branching model and commit message conventions. Use whenever
 ## Workflow
 
 - For new work, create a `feature/<name>` branch off `dev`. Once it is completed and tested, merge it back to `dev` via a PR.
-- If there is a `staging` branch, merge from `dev` to `staging` via a PR for final testing. Once testing is done, merge from `staging` to `main` via a PR.
-- If there is no `staging` branch, merge from `dev` to `main` via a PR.
+- To release, merge from `dev` to `main` via a PR. There is no `staging` branch.
 - Work on errors, bugs, and fixes should be done on a `hotfix/<name>` branch off the affected branch (e.g. `dev`). Once tested and complete, merge it from the `hotfix/` branch back to the branch it came from (e.g. `dev`).
 - A hotfix made off `main` must also be merged into `dev`, so the fix is not lost.
 
