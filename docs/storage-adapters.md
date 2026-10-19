@@ -72,6 +72,8 @@ If the adapter can't be reached, the form still works. Progress is kept in memor
 
 ## Several tabs
 
+The tab check is best-effort and not atomic. See [Several Tabs](several-tabs.md) for what it covers and what your server should still guard against.
+
 `localStorageAdapter()` (from [`@richardmcquiston01/storage-adapters/browser`](https://www.npmjs.com/package/@richardmcquiston01/storage-adapters)) gives each saved value a revision and reports changes made in other tabs.
 
 - **Conflicts:** if two tabs save at once, they are merged. Answers are merged per question. A tab that only typed never overwrites another tab's progress. After three conflicts in a row, the save is abandoned and reported.

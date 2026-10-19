@@ -146,6 +146,8 @@ bun run typecheck
 | [Custom Adapters](docs/custom-adapters.md)     | Write your own input, output, and error-log adapters              |
 | [Optional Adapters](docs/optional-adapters.md) | Use ready-made adapters for webhooks, WebSockets, MongoDB, MySQL  |
 | [Storage Adapters](docs/storage-adapters.md)   | Save progress somewhere other than `localStorage`, with conflict handling and cross-tab sync |
+| [Versioning Policy](docs/versioning-policy.md) | What is public, support windows, deprecation, and schema versions (draft defaults) |
+| [Several Tabs](docs/several-tabs.md)           | What is protected when a form is open in two tabs, and what is not |
 | [Headless Usage](docs/headless-usage.md)       | Run the form logic in Node with no screen                         |
 | [Demo](docs/demo.md)                           | Run the example app, with or without Docker                       |
 | [Schema Builder](docs/schema-builder.md)       | Build schemas in a visual editor instead of writing JSON          |
