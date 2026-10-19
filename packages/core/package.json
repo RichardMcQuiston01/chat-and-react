@@ -13,6 +13,10 @@
   "bugs": {
     "url": "https://github.com/RichardMcQuiston01/chat-and-react/issues"
   },
+  "funding": {
+    "type": "individual",
+    "url": "https://donate.stripe.com/00w5kD3Gj1Xo9v7gVOcs800"
+  },
   "keywords": [
     "chat",
     "form",
