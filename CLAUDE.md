@@ -60,9 +60,9 @@ Routes runtime errors to a sink. The interface and the console, webhook, and Mon
 
 Follow `.claude/skills/git-workflow/SKILL.md`. In short:
 
-- Long-lived branches: `main` (live), `staging` (final testing), `dev` (development). Short-lived: `feature/<name>` for new work and `hotfix/<name>` for bugs, both branched off `dev` (a hotfix may branch off the affected branch, and one made off `main` must also be merged into `dev`).
-- Open PRs into `dev`. Promote with PRs `dev` → `staging` → `main`.
-- Merge PRs with a merge commit (no squash, no rebase). Fast-forward `dev` and `staging` to `main` after a promotion. Do not delete branches after merging.
+- Long-lived branches: `main` (live), `dev` (development). Short-lived: `feature/<name>` for new work and `hotfix/<name>` for bugs, both branched off `dev` (a hotfix may branch off the affected branch, and one made off `main` must also be merged into `dev`).
+- Open PRs into `dev`. Promote with a PR `dev` → `main`.
+- Merge PRs with a merge commit (no squash, no rebase). Fast-forward `dev` to `main` after a promotion. Do not delete branches after merging.
 - Commit messages are Conventional Commits (`type(scope): summary`), with a summary of 50 characters or less, a blank line, and a body that explains why.
 
 ## Releasing
@@ -71,7 +71,7 @@ The three published packages (`@richardmcquiston01/chat-and-react-core`, `-adapt
 
 1. On a `feature/release-x.y.z` branch off `dev`, move the CHANGELOG's `[Unreleased]` entries under a new `## [x.y.z] — date` heading and bump `version` in `packages/core`, `packages/adapters` and `packages/web`. Merge it into `dev` with a PR.
 2. Run `bun install`, `bun run build`, `bun run typecheck`, `bun run test` and `bun run lint`.
-3. Promote `dev` to `staging` with a PR for final testing, then `staging` to `main` with a PR. Afterwards, fast-forward `dev` and `staging` to `main`.
+3. Promote `dev` to `main` with a PR. Afterwards, fast-forward `dev` to `main`.
 4. Publish by creating a GitHub release tagged `vx.y.z` on `main` (the tag must match every package version). The `Publish` workflow (secret `NPM_TOKEN`) runs lint, typecheck, tests and the build, packs each package with `bun pm pack`, and publishes **core first**, then `adapters` and `web`, with `npm publish` on the tarball so it gets provenance. It skips a package that is already on npm, so a failed run can be re-run. It can also be started by hand from the Actions tab (with an optional dry run). Never run `npm publish` from a package directory: it leaves `workspace:*` in the published `package.json`, which npm cannot install (0.5.0 of `-adapters` and `chat-and-react` were published that way). To publish by hand instead, use `bun publish` from each package directory, core first.
 
    A version with a prerelease part (for example `1.0.0-rc.1`) is published under the `next` npm tag instead of `latest`, and its GitHub release should be marked as a pre-release. Its CHANGELOG section is headed `## [1.0.0-rc.1]`.
