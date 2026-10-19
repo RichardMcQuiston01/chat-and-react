@@ -3,6 +3,10 @@
   "version": "0.12.0",
   "description": "Optional input, output, and error-log adapters (webhook, WebSocket, MongoDB, MySQL, EventEmitter) for chat-and-react.",
   "license": "Apache-2.0",
+  "funding": {
+    "type": "individual",
+    "url": "https://donate.stripe.com/00w5kD3Gj1Xo9v7gVOcs800"
+  },
   "author": "Richard McQuiston <richard.mcquiston01@gmail.com>",
   "homepage": "https://github.com/RichardMcQuiston01/chat-and-react#readme",
   "repository": {

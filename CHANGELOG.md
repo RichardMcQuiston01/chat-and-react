@@ -14,6 +14,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- A `funding` link in the `package.json` of `-core`, `-adapters` and `chat-and-react` (so `npm fund` and the npm page show it), and the standard "Buy Me a Coffee" section in their READMEs, with the QR image loaded from the repository so it shows on the npm page
 - `SECURITY.md`: how to report a vulnerability privately through GitHub, which packages and versions are covered, and what to expect
 - [`chat-error`](docs/events.md#chat-error) is now described in the Events docs: when it fires, what `event.detail` holds, and which errors do not fire it
 - [Versioning, Support and Deprecation](docs/versioning-policy.md): what counts as public API, how version numbers change, support windows, the deprecation process, schema versioning and saved data. The numbers are draft defaults that take effect at 1.0.0
